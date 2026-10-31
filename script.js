@@ -3310,9 +3310,16 @@ function renderAdmJadwalForm() {
       return SUPABASE_URL + '/storage/v1/object/public/schedule-photos/' + encodedPath;
     };
 
-    const fotoTuanRumah = r.ref.foto_tuan_rumah || '';
-    const fotoPemimpin = r.ref.foto_pemimpin_ibadah || '';
     const savedInfo = scheduleOverrides[admEditId] || {};
+    const fotoTuanRumah = savedInfo.foto_tuan_rumah || r.ref.foto_tuan_rumah || '';
+    const fotoPemimpin = savedInfo.foto_pemimpin_ibadah || r.ref.foto_pemimpin_ibadah || '';
+    // Foto jadwal hanya untuk kategori yang memang memerlukannya.
+    // Anak: hanya TPI. Doa & Pelayanan: Doa Pagi Bersama tanpa foto.
+    const allowSchedulePhotos = !(r.cat === 'anak' && r.id !== 'sch-13') &&
+      !(r.cat === 'doa' && r.id === 'sch-12');
+    const photoClearButton = (id, label, value) => value
+      ? '<button type="button" class="btn btn-ghost btn-sm" data-photo-clear="' + id + '">' + icon('xmark') + ' Hapus foto ' + label + '</button>'
+      : '';
     const hostName = savedInfo.nama_tuan_rumah || r.ref.host?.name || '';
     const leaderName = savedInfo.nama_pemimpin_ibadah || r.ref.leader?.name || '';
     const leaderStatus = savedInfo.status_pemimpin_ibadah || r.ref.leader?.status || '';
@@ -3353,23 +3360,26 @@ function renderAdmJadwalForm() {
           '<input type="text" id="fNamaPemimpin" maxlength="120" value="' + esc(leaderName) + '" required></div>' +
         '<div class="field"><label for="fStatusPemimpin">Status / Jabatan Pemimpin Ibadah</label>' +
           '<input type="text" id="fStatusPemimpin" maxlength="120" value="' + esc(leaderStatus) + '"></div>' +
-        '<div class="field">' +
+        (allowSchedulePhotos ? '<div class="field">' +
           '<label for="fFotoTuanRumah">Foto Tuan Rumah</label>' +
           (fotoTuanRumah
             ? '<img src="' + esc(photoUrl(fotoTuanRumah)) +
-              '" alt="Foto Tuan Rumah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">'
+              '" alt="Foto Tuan Rumah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">' +
+              photoClearButton('host', 'Tuan Rumah', fotoTuanRumah)
             : '<p>Belum ada foto Tuan Rumah.</p>') +
           '<input type="file" id="fFotoTuanRumah" accept="image/*">' +
+          '<input type="hidden" id="fClearFotoTuanRumah" value="0">' +
         '</div>' +
-
         '<div class="field">' +
           '<label for="fFotoPemimpin">Foto Pemimpin Ibadah</label>' +
           (fotoPemimpin
             ? '<img src="' + esc(photoUrl(fotoPemimpin)) +
-              '" alt="Foto Pemimpin Ibadah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">'
+              '" alt="Foto Pemimpin Ibadah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">' +
+              photoClearButton('leader', 'Pemimpin Ibadah', fotoPemimpin)
             : '<p>Belum ada foto Pemimpin Ibadah.</p>') +
           '<input type="file" id="fFotoPemimpin" accept="image/*">' +
-        '</div>' +
+          '<input type="hidden" id="fClearFotoPemimpin" value="0">' +
+        '</div>' : '<p class="field-hint">Kategori ini tidak memerlukan foto jadwal.</p>') +
 
         '<p class="field-error" id="fErr" role="alert"></p>' +
 
@@ -3379,6 +3389,26 @@ function renderAdmJadwalForm() {
         '</div>' +
 
       '</form>';
+
+    $$('[data-photo-clear]', admBody).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.getAttribute('data-photo-clear');
+        const isHost = kind === 'host';
+        const fileInput = $(isHost ? '#fFotoTuanRumah' : '#fFotoPemimpin');
+        const hiddenInput = $(isHost ? '#fClearFotoTuanRumah' : '#fClearFotoPemimpin');
+        if (hiddenInput) hiddenInput.value = '1';
+        if (fileInput) fileInput.value = '';
+        const field = btn.closest('.field');
+        if (field) {
+          const img = field.querySelector('img');
+          if (img) img.remove();
+          btn.remove();
+          const note = document.createElement('p');
+          note.textContent = 'Foto akan dihapus setelah tombol Simpan ditekan.';
+          field.insertBefore(note, fileInput);
+        }
+      });
+    });
 
     window.setTimeout(() => {
       const f = $('#fPlace');
@@ -3623,10 +3653,26 @@ function renderAdmJadwalForm() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success || !result.content_value) return;
-      siteStore[contentKey] = result.content_value;
+      const serverValue = result.content_value;
+      if (['news', 'devotions', 'announcements', 'ministries'].indexOf(contentKey) !== -1) {
+        const items = Array.isArray(serverValue) ? serverValue : (serverValue && serverValue.items);
+        if (!Array.isArray(items)) return;
+        siteStore[contentKey] = items;
+        if (contentKey === 'news') replaceArr(newsArticles, items);
+        else if (contentKey === 'devotions') replaceArr(dailyDevotions, items, 1);
+        else if (contentKey === 'announcements') replaceArr(announcements, items);
+        else if (contentKey === 'ministries') replaceArr(ministries, items);
+        lsSet(LS_SITE, siteStore);
+        if (contentKey === 'news') { newsVisible = NEWS_STEP; renderNews(); }
+        else if (contentKey === 'devotions') renderDevotion();
+        else if (contentKey === 'announcements') { renderAnnouncements(); renderTopbar(); }
+        else if (contentKey === 'ministries') renderMinistries();
+        return;
+      }
+      siteStore[contentKey] = serverValue;
       lsSet(LS_SITE, siteStore);
-      if (contentKey === 'hero') { applyHero(result.content_value); renderHero(); }
-      else if (contentKey === 'profile') { applyProfile(result.content_value); renderProfile(); }
+      if (contentKey === 'hero') { applyHero(serverValue); renderHero(); }
+      else if (contentKey === 'profile') { applyProfile(serverValue); renderProfile(); }
     } catch (error) {
       console.warn('Konten ' + contentKey + ' belum dapat dimuat dari server:', error);
     }
@@ -3771,6 +3817,20 @@ function renderAdmJadwalForm() {
           backup.forEach((x) => cfg.arr.push(x));
           saveSite(cfg.store, cfg.arr);
           return error.message || 'Galeri gagal disinkronkan ke Supabase.';
+        }
+      }
+      // Berita, renungan, pengumuman, dan pelayanan harus disimpan di server,
+      // bukan hanya localStorage. Array dibungkus menjadi objek {items: []}
+      // agar sesuai validasi content_value jsonb berbentuk object di Edge Function.
+      const serverListKeys = ['news', 'devotions', 'announcements', 'ministries'];
+      if (serverListKeys.indexOf(cfg.store) !== -1) {
+        try {
+          await syncSiteContentToServer(cfg.store, cfg.arr);
+        } catch (error) {
+          cfg.arr.length = 0;
+          backup.forEach((x) => cfg.arr.push(x));
+          saveSite(cfg.store, cfg.arr);
+          return error.message || ('Konten ' + cfg.store + ' gagal disinkronkan ke Supabase.');
         }
       }
       if (!saveSite(cfg.store, cfg.arr)) {
@@ -4602,6 +4662,8 @@ if (e.target.id === 'admJadwalForm') {
 
   const fotoTuanRumahFile = $('#fFotoTuanRumah')?.files?.[0] || null;
   const fotoPemimpinFile = $('#fFotoPemimpin')?.files?.[0] || null;
+  const clearFotoTuanRumah = $('#fClearFotoTuanRumah')?.value === '1';
+  const clearFotoPemimpin = $('#fClearFotoPemimpin')?.value === '1';
 
   if (place.length < 3) {
     err.textContent = 'Tempat ibadah minimal 3 karakter.';
@@ -4631,14 +4693,21 @@ if (e.target.id === 'admJadwalForm') {
     week: weekKey(new Date()),
     by: currentUser.username,
     at: new Date().toISOString(),
-    foto_tuan_rumah: prev?.foto_tuan_rumah || r?.ref?.foto_tuan_rumah || null,
-    foto_pemimpin_ibadah: prev?.foto_pemimpin_ibadah || r?.ref?.foto_pemimpin_ibadah || null,
+    foto_tuan_rumah: clearFotoTuanRumah ? null : (prev?.foto_tuan_rumah || r?.ref?.foto_tuan_rumah || null),
+    foto_pemimpin_ibadah: clearFotoPemimpin ? null : (prev?.foto_pemimpin_ibadah || r?.ref?.foto_pemimpin_ibadah || null),
     nama_tuan_rumah: namaTuanRumah, nama_pemimpin_ibadah: namaPemimpin, status_pemimpin_ibadah: statusPemimpin
   };
 
   if (prev) {
     if (prev.title) entry.title = prev.title;
     if (prev.note) entry.note = prev.note;
+  }
+
+  const allowSchedulePhotos = !(r.cat === 'anak' && r.id !== 'sch-13') &&
+    !(r.cat === 'doa' && r.id === 'sch-12');
+  if (!allowSchedulePhotos) {
+    entry.foto_tuan_rumah = null;
+    entry.foto_pemimpin_ibadah = null;
   }
 
   const titleEl = $('#fTitle');
@@ -4675,7 +4744,7 @@ if (e.target.id === 'admJadwalForm') {
     err.textContent = '';
 
     // Upload foto Tuan Rumah jika ada foto baru.
-    if (fotoTuanRumahFile) {
+    if (allowSchedulePhotos && !clearFotoTuanRumah && fotoTuanRumahFile) {
       entry.foto_tuan_rumah = await uploadSchedulePhoto(
         fotoTuanRumahFile,
         admEditId,
@@ -4685,7 +4754,7 @@ if (e.target.id === 'admJadwalForm') {
     }
 
     // Upload foto Pemimpin Ibadah jika ada foto baru.
-    if (fotoPemimpinFile) {
+    if (allowSchedulePhotos && !clearFotoPemimpin && fotoPemimpinFile) {
       entry.foto_pemimpin_ibadah = await uploadSchedulePhoto(
         fotoPemimpinFile,
         admEditId,
@@ -4832,6 +4901,10 @@ if (e.target.id === 'admJadwalForm') {
   loadStrukturFromServer();
   loadSiteContentFromServer('hero');
   loadSiteContentFromServer('profile');
+  loadSiteContentFromServer('news');
+  loadSiteContentFromServer('devotions');
+  loadSiteContentFromServer('announcements');
+  loadSiteContentFromServer('ministries');
   onScroll();
 
   window.setInterval(renderSchedules, 5 * 60 * 1000);
