@@ -2357,10 +2357,10 @@ async function loadScheduleFromSupabase() {
     }
   });
 
-  // Hak akses: super admin = seluruh website; admin = jadwal ibadah saja; bendahara = kolektan saja
+  // Hak akses: Admin hanya dapat mengelola jadwal, unit, dan binakel di sektornya sendiri.
   const ROLE_TABS = {
     superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff'],
-    admin: ['jadwal', 'password'],
+    admin: ['jadwal', 'sektor', 'password'],
     bendahara: ['kolektan', 'password']
   };
   const TAB_LABEL = {
@@ -2375,7 +2375,7 @@ async function loadScheduleFromSupabase() {
     galeri: 'images', pengumuman: 'bullhorn', informasi: 'phone', pesan: 'envelope', password: 'shield-heart', staff: 'users'
   };
   const TAB_DESC = {
-    jadwal: 'Tempat, hari, dan jam ibadah', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
+    jadwal: 'Jadwal sektor sendiri, unit, dan binakel', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
     profil: 'Profil, visi, misi, sejarah', struktur: 'Majelis & kepengurusan', sektor: 'Tuan rumah & pemimpin ibadah',
     pelayanan: 'Kartu pelayanan jemaat', berita: 'Berita & kegiatan', renungan: 'Renungan harian',
     galeri: 'Foto dokumentasi', pengumuman: 'Pengumuman jemaat', informasi: 'Alamat, kontak, peta, rekening',
@@ -2564,6 +2564,32 @@ async function loadScheduleFromSupabase() {
     return String(s || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   }
 
+  /* ---------- Pembatasan akses berdasarkan sektor akun ---------- */
+  function sectorKeyForName(name) {
+    const n = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (n === 'embunhermon') return 'embun-hermon';
+    if (n === 'imanuel') return 'imanuel';
+    if (n === 'maranatha') return 'maranatha';
+    if (n === 'ebenhaezer' || n === 'ebenheazer') return 'ebenheazer';
+    if (n === 'efrata') return 'efrata';
+    if (n === 'lahairoi' || n === 'lahairoi') return 'lahai-roi';
+    return '';
+  }
+  function currentAdminSectorKey() {
+    return currentUser && currentUser.role === 'admin' ? sectorKeyForName(currentUser.sector) : '';
+  }
+  function scheduleBelongsToCurrentAdmin(item) {
+    if (!currentUser || currentUser.role !== 'admin') return true;
+    const key = currentAdminSectorKey();
+    if (!key || !item) return false;
+    if (String(item.id || '').indexOf('sek-' + key + '-') === 0) return true;
+    const sectorScheduleIds = {
+      'embun-hermon': 'sch-6', 'imanuel': 'sch-7', 'maranatha': 'sch-8',
+      'ebenheazer': 'sch-9', 'efrata': 'sch-10', 'lahai-roi': 'sch-11'
+    };
+    return item.id === sectorScheduleIds[key];
+  }
+
   /* ---------- Data tersimpan (jadwal & kolekta) ---------- */
   // Semua item jadwal yang bisa diubah: jadwal umum, sektor, unit, binakel
   function scheduleRegistry() {
@@ -2731,6 +2757,7 @@ function applyScheduleOverrides() {
   function sektorRefs() {
     const out = [];
     sektorData.forEach((s) => {
+      if (currentUser && currentUser.role === 'admin' && s.id !== currentAdminSectorKey()) return;
       s.units.forEach((u) => out.push({ id: 'sek-' + s.id + '-' + u.id, group: 'Sektor ' + s.name + ' — Unit', title: u.name, ref: u, kind: 'unit' }));
       s.binakel.groups.forEach((g) => out.push({ id: 'sek-' + s.id + '-' + g.id, group: 'Sektor ' + s.name + ' — Binakel', title: g.name, ref: g, kind: 'kel' }));
     });
@@ -3238,7 +3265,7 @@ async function renderAdmPesan() {
   /* -- Jadwal Ibadah -- */
   function admSummary() {
     const wk = weekKey(new Date());
-    const weekly = scheduleRegistry().filter((r) => r.weekly);
+    const weekly = scheduleRegistry().filter((r) => r.weekly && scheduleBelongsToCurrentAdmin(r));
     const done = weekly.filter((r) => scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk).length;
     return { done: done, total: weekly.length };
   }
@@ -3270,6 +3297,7 @@ async function renderAdmPesan() {
     const q = admFilter.q.trim().toLowerCase();
     const isMissing = (r) => r.weekly && !(scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk);
     const list = scheduleRegistry()
+      .filter((r) => scheduleBelongsToCurrentAdmin(r))
       .filter((r) => admFilter.cat === 'all' || r.cat === admFilter.cat)
       .filter((r) => !admFilter.missing || isMissing(r))
       .filter((r) => !q || (r.title + ' ' + r.ref.place + ' ' + r.catLabel).toLowerCase().indexOf(q) !== -1)
@@ -3294,7 +3322,7 @@ async function renderAdmPesan() {
 
  
 function renderAdmJadwalForm() {
-    const r = scheduleRegistry().filter((x) => x.id === admEditId)[0];
+    const r = scheduleRegistry().filter((x) => x.id === admEditId && scheduleBelongsToCurrentAdmin(x))[0];
     if (!r) { admEditId = null; renderAdmJadwal(); return; }
 
     const dayOpts = dayNames.map((n, i) =>
