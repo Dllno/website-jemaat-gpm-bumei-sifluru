@@ -3535,13 +3535,12 @@ function renderAdmJadwalForm() {
     try {
       const result = await kolektanRequest('get_kolektan');
       const rows = Array.isArray(result.records) ? result.records : [];
-      // Migrasi otomatis data lokal lama hanya jika tabel server masih kosong dan sesi admin tersedia.
+      // Supabase adalah sumber data utama. Migrasi data lokal lama hanya boleh
+      // dilakukan sekali per browser, sebelum browser pernah berhasil sinkron.
       const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
-      if (!rows.length && kolektanData.length && !(session && session.access_token)) {
-        renderKolektan();
-        return; // Pertahankan data lokal lama sampai admin login dan migrasi bisa dijalankan.
-      }
-      if (!rows.length && kolektanData.length && session && session.access_token) {
+      const syncKey = 'gpm-bsf-kolektan-supabase-synced';
+      const hasSyncedWithServer = localStorage.getItem(syncKey) === '1';
+      if (!rows.length && kolektanData.length && session && session.access_token && !hasSyncedWithServer) {
         for (const item of kolektanData.slice()) {
           await kolektanRequest('save_kolektan', { record: {
             date: item.date, total: Number(item.total), words: item.words || terbilang(item.total),
@@ -3552,6 +3551,9 @@ function renderAdmJadwalForm() {
         const migrated = await kolektanRequest('get_kolektan');
         rows.push(...(Array.isArray(migrated.records) ? migrated.records : []));
       }
+      // Bahkan ketika server kosong, bersihkan cache lama agar data yang sudah
+      // dihapus tidak muncul kembali pada pengunjung setelah refresh.
+      localStorage.setItem(syncKey, '1');
       kolektanData.length = 0;
       rows.forEach((r) => {
         const date = String(r.date || r.collection_date || '');
