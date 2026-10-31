@@ -3418,47 +3418,65 @@ function renderAdmJadwalForm() {
 }
 
 
-  /* -- Pengelolaan akun petugas (UI) -- */
-  const STAFF_KEY = 'gpm-bsf-staff-status';
-  const staffRoster = [
-    { name: 'Admin 1', email: 'admin1@domain-gereja.id', role: 'admin' },
-    { name: 'Admin 2', email: 'admin2@domain-gereja.id', role: 'admin' },
-    { name: 'Admin 3', email: 'admin3@domain-gereja.id', role: 'admin' },
-    { name: 'Admin 4', email: 'admin4@domain-gereja.id', role: 'admin' },
-    { name: 'Admin 5', email: 'admin5@domain-gereja.id', role: 'admin' },
-    { name: 'Admin 6', email: 'admin6@domain-gereja.id', role: 'admin' },
-    { name: 'Bendahara 1', email: 'bendahara1@domain-gereja.id', role: 'bendahara' },
-    { name: 'Bendahara 2', email: 'bendahara2@domain-gereja.id', role: 'bendahara' }
-  ];
+  /* -- Pengelolaan akun petugas: Supabase menjadi sumber data utama -- */
+  let staffRoster = [];
+  let staffLoaded = false;
+  let staffLoading = false;
   let staffFilter = { q: '', role: 'all', status: 'all' };
-  function staffStatuses() { return lsGet(STAFF_KEY, {}); }
+  async function loadStaffAccounts() {
+    if (staffLoading) return;
+    staffLoading = true;
+    try {
+      const result = await kolektanRequest('list_staff_accounts');
+      staffRoster = Array.isArray(result.accounts) ? result.accounts : [];
+      staffLoaded = true;
+    } catch (err) {
+      toast(err.message || 'Daftar akun petugas gagal dimuat dari Supabase.', 'error');
+    } finally {
+      staffLoading = false;
+      if (currentUser && currentUser.role === 'superadmin' && admTab === 'staff') renderAdmStaff();
+    }
+  }
   function renderAdmStaff() {
     if (!currentUser || currentUser.role !== 'superadmin') return;
-    const states = staffStatuses();
-    const list = staffRoster.filter((s) => {
-      const status = states[s.email] === false ? 'inactive' : 'active';
+    if (!staffLoaded && !staffLoading) { loadStaffAccounts(); }
+    const list = staffRoster.filter((a) => {
+      const status = a.is_active ? 'active' : 'inactive';
       const q = staffFilter.q.toLowerCase();
-      return (!q || (s.name + ' ' + s.email).toLowerCase().includes(q)) &&
-        (staffFilter.role === 'all' || s.role === staffFilter.role) &&
+      return (!q || (a.username + ' ' + (a.sector || '') + ' ' + a.role).toLowerCase().includes(q)) &&
+        (staffFilter.role === 'all' || a.role === staffFilter.role) &&
         (staffFilter.status === 'all' || status === staffFilter.status);
     });
     admBody.innerHTML =
       '<h4 class="adm-form-title">ADMIN YANG BERTUGAS</h4>' +
-      '<p class="adm-intro">Daftar 6 Admin dan 2 Bendahara. Ganti email contoh dengan email resmi sebelum digunakan.</p>' +
-      '<p class="adm-warning-note">PENTING: status pada tampilan ini tersimpan di browser. Penonaktifan akun dan pencabutan sesi yang benar-benar aman wajib diterapkan juga pada backend.</p>' +
+      '<p class="adm-intro">Daftar akun Admin dan Bendahara diambil langsung dari database Supabase. Status aktif/nonaktif berlaku lintas perangkat.</p>' +
+      '<form id="staffCreateForm" class="adm-staff-create" novalidate>' +
+        '<h5>Tambah akun petugas</h5>' +
+        '<div class="field"><label for="staffUsername">Username</label><input id="staffUsername" name="username" minlength="3" maxlength="40" autocomplete="off" required></div>' +
+        '<div class="field"><label for="staffRoleNew">Jabatan</label><select id="staffRoleNew" name="role"><option value="admin">Admin</option><option value="bendahara">Bendahara</option></select></div>' +
+        '<div class="field"><label for="staffSectorNew">Sektor (khusus Admin)</label><select id="staffSectorNew" name="sector"><option value="Embun Hermon">Embun Hermon</option><option value="Imanuel">Imanuel</option><option value="Maranatha">Maranatha</option><option value="Ebenhaezer">Ebenhaezer</option><option value="Efrata">Efrata</option><option value="Lahairoi">Lahairoi</option></select></div>' +
+        '<div class="field"><label for="staffPasswordNew">Password awal (minimal 8 karakter)</label><input id="staffPasswordNew" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div>' +
+        '<button type="submit" class="btn btn-navy btn-sm">Buat akun di Supabase</button>' +
+      '</form>' +
       '<div class="adm-staff-controls">' +
-        '<input id="staffQ" type="search" placeholder="Cari nama atau email" value="' + esc(staffFilter.q) + '">' +
+        '<input id="staffQ" type="search" placeholder="Cari username atau sektor" value="' + esc(staffFilter.q) + '">' +
         '<select id="staffRole"><option value="all">Semua jabatan</option><option value="admin"' + (staffFilter.role === 'admin' ? ' selected' : '') + '>Admin</option><option value="bendahara"' + (staffFilter.role === 'bendahara' ? ' selected' : '') + '>Bendahara</option></select>' +
         '<select id="staffStatus"><option value="all">Semua status</option><option value="active"' + (staffFilter.status === 'active' ? ' selected' : '') + '>Aktif</option><option value="inactive"' + (staffFilter.status === 'inactive' ? ' selected' : '') + '>Nonaktif</option></select>' +
       '</div>' +
-      '<div class="adm-staff-table-wrap"><table class="adm-staff-table"><thead><tr><th>No.</th><th>Nama petugas</th><th>Email</th><th>Jabatan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>' +
-      (list.length ? list.map((s) => {
-        const active = states[s.email] !== false;
-        return '<tr><td>' + (staffRoster.indexOf(s) + 1) + '</td><td>' + esc(s.name) + '</td><td>' + esc(s.email) + '</td><td>' + (s.role === 'admin' ? 'Admin' : 'Bendahara') + '</td>' +
+      '<div class="adm-staff-table-wrap"><table class="adm-staff-table"><thead><tr><th>No.</th><th>Username</th><th>Sektor</th><th>Jabatan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>' +
+      (staffLoading && !staffLoaded ? '<tr><td colspan="6">Memuat akun dari Supabase…</td></tr>' : list.length ? list.map((a, i) => {
+        const active = a.is_active === true;
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(a.username) + '</td><td>' + esc(a.sector || '—') + '</td><td>' + (a.role === 'admin' ? 'Admin' : 'Bendahara') + '</td>' +
           '<td><span class="adm-staff-status ' + (active ? 'active' : 'inactive') + '">' + (active ? 'Aktif' : 'Nonaktif') + '</span></td>' +
-          '<td><button type="button" class="btn btn-ghost btn-sm" data-adm="staff-toggle" data-id="' + esc(s.email) + '">' + (active ? 'Nonaktifkan' : 'Aktifkan') + '</button></td></tr>';
-      }).join('') : '<tr><td colspan="6">Tidak ada petugas yang cocok.</td></tr>') +
+          '<td><button type="button" class="btn btn-ghost btn-sm" data-adm="staff-toggle" data-id="' + esc(a.id) + '" data-active="' + (active ? 'true' : 'false') + '">' + (active ? 'Nonaktifkan' : 'Aktifkan') + '</button></td></tr>';
+      }).join('') : '<tr><td colspan="6">Tidak ada akun petugas yang cocok.</td></tr>') +
       '</tbody></table></div>';
+    const roleEl = $('#staffRoleNew');
+    const sectorEl = $('#staffSectorNew');
+    if (roleEl && sectorEl) {
+      sectorEl.disabled = roleEl.value !== 'admin';
+      roleEl.addEventListener('change', () => { sectorEl.disabled = roleEl.value !== 'admin'; });
+    }
   }
   function renderAdmPassword() {
     admBody.innerHTML =
@@ -4427,6 +4445,29 @@ function renderAdmJadwalForm() {
       '</form>';
   }
 
+  admBody.addEventListener('submit', async (e) => {
+    if (e.target.id !== 'staffCreateForm') return;
+    e.preventDefault();
+    if (!currentUser || currentUser.role !== 'superadmin') return;
+    const form = e.target;
+    const username = form.elements.username.value.trim().toLowerCase();
+    const role = form.elements.role.value;
+    const sector = form.elements.sector.value;
+    const password = form.elements.password.value;
+    const submit = form.querySelector('button[type="submit"]');
+    if (!/^[a-zA-Z0-9_.-]{3,40}$/.test(username)) { toast('Username harus 3–40 karakter dan memakai huruf/angka/._-', 'error'); return; }
+    if (password.length < 8) { toast('Password minimal 8 karakter.', 'error'); return; }
+    if (submit) { submit.disabled = true; submit.textContent = 'Membuat akun…'; }
+    try {
+      await kolektanRequest('create_staff_account', { username, role, sector: role === 'admin' ? sector : null, password });
+      form.reset();
+      staffLoaded = false;
+      await loadStaffAccounts();
+      toast('Akun baru tersimpan di Supabase. Simpan password awal dengan aman.', 'success');
+    } catch (err) { toast(err.message || 'Akun gagal dibuat.', 'error'); }
+    finally { if (submit) { submit.disabled = false; submit.textContent = 'Buat akun di Supabase'; } }
+  });
+
   /* -- Interaksi panel -- */
   admBody.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-adm]');
@@ -4436,11 +4477,12 @@ function renderAdmJadwalForm() {
     const spec = SITE_TABS[admTab];
 
     if (act === 'staff-toggle' && currentUser && currentUser.role === 'superadmin') {
-      const states = staffStatuses();
-      states[id] = states[id] === false ? true : false;
-      if (!lsSet(STAFF_KEY, states)) { toast('Status tidak dapat disimpan di browser ini.', 'error'); return; }
-      renderAdmStaff();
-      toast('Status tampilan petugas diperbarui. Ini belum menonaktifkan akun di server.', 'info');
+      try {
+        await kolektanRequest('set_staff_account_status', { id, is_active: t.getAttribute('data-active') !== 'true' });
+        staffLoaded = false;
+        await loadStaffAccounts();
+        toast('Status akun berhasil diperbarui di Supabase.', 'success');
+      } catch (err) { toast(err.message || 'Status akun gagal diperbarui.', 'error'); }
     }
     else if (act === 'menu' && admMulti()) {
       // Kembali ke Menu Panel (tanpa keluar dari panel)
