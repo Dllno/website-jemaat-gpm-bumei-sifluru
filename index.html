@@ -19,8 +19,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317365D'/%3E%3Cpath d='M32 12v40M20 26h24' stroke='%23D4AF6A' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
 
 <link rel="preconnect" href="https://images.unsplash.com" />
-<link rel="preload" href="/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/playfair-display-latin-var.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/playfair-display-latin-var.woff2" as="font" type="font/woff2" crossorigin />
 
 <script>
   window.imgFallback = function (img) {
@@ -42,13 +42,13 @@
 <div class="topbar" id="topbar" hidden>
   <div class="container topbar-inner">
     <p>
-      <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#bullhorn"></use></svg>
+      <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#bullhorn"></use></svg>
       <span><strong>Pengumuman:</strong> <span id="topbarText"></span></span>
     </p>
     <div class="topbar-actions">
       <button type="button" id="topbarRead">Baca</button>
       <button type="button" class="topbar-close" id="topbarClose" aria-label="Tutup banner pengumuman">
-        <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#xmark"></use></svg>
+        <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#xmark"></use></svg>
       </button>
     </div>
   </div>
@@ -81,7 +81,7 @@
         <li class="has-dropdown" id="navDropdown">
           <button type="button" class="nav-link nav-drop-toggle" id="dropdownToggle"
                   aria-expanded="false" aria-controls="dropdownInformasi">
-            Informasi <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#chevron-down"></use></svg>
+            Informasi <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#chevron-down"></use></svg>
           </button>
           <ul class="dropdown" id="dropdownInformasi">
             <li><a class="nav-link" href="#pengumuman">Pengumuman</a></li>
@@ -94,12 +94,12 @@
         </li>
       </ul>
       <a href="#jadwal" class="btn btn-gold btn-sm header-cta-mobile">
-        <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar-check"></use></svg> Jadwal Ibadah
+        <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar-check"></use></svg> Jadwal Ibadah
       </a>
     </nav>
 
     <a href="#jadwal" class="btn btn-gold btn-sm header-cta">
-      <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar-check"></use></svg> Jadwal Ibadah
+      <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar-check"></use></svg> Jadwal Ibadah
     </a>
 
     <button type="button" class="login-btn" id="loginBtn" aria-label="Masuk sebagai admin" title="Masuk sebagai admin">
@@ -109,7 +109,7 @@
 
     <button type="button" class="nav-toggle" id="navToggle"
             aria-expanded="false" aria-controls="mainNav" aria-label="Buka menu navigasi">
-      <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#bars"></use></svg>
+      <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#bars"></use></svg>
     </button>
   </div>
 </header>
@@ -139,10 +139,10 @@
       </p>
       <div class="hero-actions hero-anim d5">
         <a href="#profil" class="btn btn-gold">
-          <svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="/icons.svg#users"></use></svg> Kenali Jemaat Kami
+          <svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg> Kenali Jemaat Kami
         </a>
         <a href="#jadwal" class="btn btn-outline">
-          <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar-days"></use></svg> Lihat Jadwal Ibadah
+          <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar-days"></use></svg> Lihat Jadwal Ibadah
         </a>
       </div>
     </div>
@@ -173,7 +173,7 @@
 
           <div class="profile-actions">
             <button type="button" class="btn btn-navy" id="profileMoreBtn">
-              <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#book-open"></use></svg> Selengkapnya
+              <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#book-open"></use></svg> Selengkapnya
             </button>
             <a href="#pelayanan" class="btn btn-ghost">Lihat Pelayanan</a>
           </div>
@@ -182,17 +182,17 @@
 
       <div class="profile-cards">
         <article class="value-card reveal">
-          <div class="value-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#eye"></use></svg></div>
+          <div class="value-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#eye"></use></svg></div>
           <h3>Visi</h3>
           <p id="visionText"></p>
         </article>
         <article class="value-card reveal">
-          <div class="value-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#route"></use></svg></div>
+          <div class="value-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#route"></use></svg></div>
           <h3>Misi</h3>
           <p id="missionText"></p>
         </article>
         <article class="value-card reveal">
-          <div class="value-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#heart"></use></svg></div>
+          <div class="value-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#heart"></use></svg></div>
           <h3>Nilai Pelayanan</h3>
           <p id="valuesText"></p>
         </article>
@@ -229,7 +229,7 @@
       <div class="toolbar reveal">
         <div class="chips" id="scheduleFilters" role="group" aria-label="Filter kategori jadwal ibadah"></div>
         <div class="search-box">
-          <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#magnifying-glass"></use></svg>
+          <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#magnifying-glass"></use></svg>
           <input type="search" id="scheduleSearch" placeholder="Cari kegiatan atau tempat..." autocomplete="off" aria-label="Cari jadwal ibadah" />
         </div>
       </div>
@@ -268,7 +268,7 @@
       <div class="toolbar reveal">
         <div class="chips" id="newsFilters" role="group" aria-label="Filter kategori berita"></div>
         <div class="search-box">
-          <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#magnifying-glass"></use></svg>
+          <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#magnifying-glass"></use></svg>
           <input type="search" id="newsSearch" placeholder="Cari berita..." autocomplete="off" aria-label="Cari berita" />
         </div>
       </div>
@@ -278,7 +278,7 @@
 
       <div class="load-more-wrap" id="newsLoadMoreWrap" hidden>
         <button type="button" class="btn btn-ghost" id="newsLoadMore">
-          <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#arrow-down"></use></svg> Muat Lebih Banyak
+          <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#arrow-down"></use></svg> Muat Lebih Banyak
         </button>
       </div>
     </div>
@@ -363,7 +363,7 @@
 
       <div class="sumb-card reveal">
         <div class="sumb-icon">
-          <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#hand-holding-heart"></use></svg>
+          <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#hand-holding-heart"></use></svg>
         </div>
         <div class="sumb-body">
           <p class="sumb-label">Nama Bank</p>
@@ -373,7 +373,7 @@
             <span id="sumbNorek">610976878</span>
           </p>
           <button type="button" class="btn btn-navy btn-sm" id="copyNorek">
-            <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#copy"></use></svg> Salin Nomor Rekening
+            <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#copy"></use></svg> Salin Nomor Rekening
           </button>
         </div>
       </div>
@@ -408,40 +408,40 @@
       <div class="location-grid">
         <div class="location-info reveal">
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#location-dot"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#location-dot"></use></svg></div>
             <div><h4>Alamat Gereja</h4><p id="locAddress">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="/icons.svg#church"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#church"></use></svg></div>
             <div><h4>Nama Gedung Gereja</h4><p id="locBuilding">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#map"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#map"></use></svg></div>
             <div><h4>Wilayah Pelayanan</h4><p id="locServiceArea">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#sitemap"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#sitemap"></use></svg></div>
             <div><h4>Klasis</h4><p id="locClassis">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#border-all"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#border-all"></use></svg></div>
             <div><h4>Batas Wilayah Pelayanan</h4><p id="locBoundaries">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#route"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#route"></use></svg></div>
             <div><h4>Petunjuk Menuju Lokasi</h4><p id="locDirections">—</p></div>
           </div>
           <div class="info-row">
-            <div class="info-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#clock"></use></svg></div>
+            <div class="info-icon"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#clock"></use></svg></div>
             <div><h4>Waktu Ibadah Minggu</h4><p id="locServiceTime">—</p></div>
           </div>
 
           <div style="display:flex;flex-wrap:wrap;gap:.7rem;">
             <a class="btn btn-navy" id="mapsBtn" href="#" target="_blank" rel="noopener noreferrer">
-              <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#map-location-dot"></use></svg> Buka di Google Maps
+              <svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#map-location-dot"></use></svg> Buka di Google Maps
             </a>
             <a class="btn btn-ghost" id="directionsBtn" href="#" target="_blank" rel="noopener noreferrer">
-              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#diamond-turn-right"></use></svg> Petunjuk Arah
+              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#diamond-turn-right"></use></svg> Petunjuk Arah
             </a>
           </div>
           <p class="muted-note" id="locCoord" style="font-size:.8rem;color:var(--muted);margin-top:.7rem;">
@@ -489,7 +489,7 @@
 
           <div id="whatsappWrap" hidden style="margin-top:1.4rem;">
             <a class="btn btn-navy" id="whatsappBtn" href="#" target="_blank" rel="noopener noreferrer">
-              <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#whatsapp"></use></svg> Hubungi via WhatsApp
+              <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#whatsapp"></use></svg> Hubungi via WhatsApp
             </a>
           </div>
         </div>
@@ -540,13 +540,13 @@
             <span class="field-error" id="err-persetujuan" role="alert"></span>
 
             <button type="submit" class="btn btn-navy btn-block" id="submitBtn">
-              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#paper-plane"></use></svg> Kirim Pesan
+              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#paper-plane"></use></svg> Kirim Pesan
             </button>
 
             <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
 
             <p style="font-size:.75rem;color:var(--muted);margin-top:1rem;line-height:1.6;">
-              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#circle-info"></use></svg>
+              <svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#circle-info"></use></svg>
               Formulir sedang dalam proses integrasi sistem. Untuk kebutuhan mendesak,
               silakan hubungi pengurus jemaat secara langsung.
             </p>
@@ -618,7 +618,7 @@
 </footer>
 
 <button type="button" class="back-to-top" id="backToTop" aria-label="Kembali ke atas halaman">
-  <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#arrow-up"></use></svg>
+  <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#arrow-up"></use></svg>
 </button>
 
 <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
@@ -631,7 +631,7 @@
         <h3 id="modalTitle">Judul</h3>
       </div>
       <button type="button" class="modal-close" id="modalClose" aria-label="Tutup dialog">
-        <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#xmark"></use></svg>
+        <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#xmark"></use></svg>
       </button>
     </div>
     <div class="modal-body" id="modalBody"></div>
@@ -642,7 +642,7 @@
 <div class="lightbox-overlay" id="lightboxOverlay" role="presentation">
   <div class="lightbox" role="dialog" aria-modal="true" aria-label="Penampil galeri foto">
     <button type="button" class="lb-close" id="lbClose" aria-label="Tutup galeri">
-      <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#xmark"></use></svg>
+      <svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#xmark"></use></svg>
     </button>
     <figure class="lightbox-figure" style="margin:0;">
       <img id="lbImage" src="" alt="" />
@@ -651,10 +651,10 @@
       <p class="lightbox-caption" id="lbCaption"></p>
       <div class="lightbox-nav">
         <button type="button" class="lb-btn" id="lbPrev" aria-label="Foto sebelumnya">
-          <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="/icons.svg#chevron-left"></use></svg>
+          <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="icons.svg#chevron-left"></use></svg>
         </button>
         <button type="button" class="lb-btn" id="lbNext" aria-label="Foto berikutnya">
-          <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg>
+          <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="icons.svg#chevron-right"></use></svg>
         </button>
       </div>
     </div>
