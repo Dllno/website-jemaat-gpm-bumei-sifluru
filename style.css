@@ -1,12 +1,12 @@
 /* Self-hosted variable fonts (SIL OFL 1.1), Latin subset */
 @font-face{
   font-family:"Inter"; font-style:normal; font-weight:400 800; font-display:swap;
-  src:url("/fonts/inter-latin-var.woff2") format("woff2");
+  src:url("fonts/inter-latin-var.woff2") format("woff2");
   unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face{
   font-family:"Playfair Display"; font-style:normal; font-weight:500 800; font-display:swap;
-  src:url("/fonts/playfair-display-latin-var.woff2") format("woff2");
+  src:url("fonts/playfair-display-latin-var.woff2") format("woff2");
   unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -1263,3 +1263,268 @@ p{ margin:0 0 1rem; }
   .kolektan-public-toolbar{align-items:stretch}
   .kolektan-public-toolbar input,.kolektan-public-toolbar button{width:100%}
 }
+
+/* ==========================================
+   KONTAK & PESAN - PANEL SUPER ADMIN
+   ========================================== */
+
+.adm-messages {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 14px;
+  background: var(--card, #fff);
+}
+
+.adm-messages-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.2rem;
+}
+
+.adm-message-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1rem 0 1.25rem;
+}
+
+.adm-message-stat {
+  flex: 1 1 150px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 12px;
+  background: var(--bg-soft, #f8f8f8);
+}
+
+.adm-message-stat small {
+  display: block;
+  color: var(--muted, #777);
+  margin-bottom: 5px;
+}
+
+.adm-message-stat strong {
+  font-size: 1.45rem;
+}
+
+.adm-message-item {
+  padding: 18px;
+  margin-top: 12px;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 12px;
+  background: var(--card, #fff);
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.adm-message-item:hover {
+  border-color: var(--accent, #b18a45);
+  box-shadow: 0 4px 14px rgba(0,0,0,.05);
+}
+
+.adm-message-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.adm-message-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.adm-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 7px;
+  color: var(--muted, #777);
+  font-size: .84rem;
+}
+
+.adm-message-subject {
+  margin: 14px 0 7px;
+  font-weight: 700;
+}
+
+.adm-message-content {
+  margin: 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adm-message-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 30px;
+  font-size: .76rem;
+  font-weight: 700;
+  background: var(--bg-soft, #f2f2f2);
+}
+
+.adm-message-status.unread {
+  color: #9a5b00;
+  background: #fff1d6;
+}
+
+.adm-message-status.read {
+  color: #1762a0;
+  background: #e5f2ff;
+}
+
+.adm-message-status.handled {
+  color: #187044;
+  background: #e3f6eb;
+}
+
+.adm-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.adm-message-actions button,
+.adm-messages-refresh {
+  border: 1px solid var(--line, #ddd);
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: var(--card, #fff);
+  color: var(--text, inherit);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.adm-message-actions button:hover,
+.adm-messages-refresh:hover {
+  border-color: var(--accent, #b18a45);
+  transform: translateY(-1px);
+}
+
+.adm-message-actions button[data-pesan="handled"] {
+  background: var(--accent, #b18a45);
+  border-color: var(--accent, #b18a45);
+  color: #fff;
+}
+
+.adm-message-actions button[data-pesan="delete"] {
+  color: #b42318;
+}
+
+.adm-message-empty {
+  padding: 35px 15px;
+  text-align: center;
+  color: var(--muted, #777);
+  border: 1px dashed var(--line, #ddd);
+  border-radius: 12px;
+}
+
+@media (max-width: 600px) {
+  .adm-messages {
+    padding: 12px;
+  }
+
+  .adm-message-item {
+    padding: 14px;
+  }
+
+  .adm-message-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .adm-message-actions button {
+    width: 100%;
+  }
+}
+
+/* Upload Foto Jadwal Ibadah */
+#admJadwalForm input[type="file"] {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px dashed #b8c4d3;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+#admJadwalForm input[type="file"]::file-selector-button {
+  padding: 9px 14px;
+  margin-right: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #1e3a5f;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#admJadwalForm input[type="file"]::file-selector-button:hover {
+  background: #294f7c;
+}
+
+#admJadwalForm .field img {
+  border: 1px solid #e2e8f0;
+}
+
+
+/* Foto pada kartu jadwal ibadah - rasio 3:4 */
+.schedule-photos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.schedule-photo-item {
+  min-width: 0;
+}
+
+.schedule-photo-item span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text, #334155);
+}
+
+.schedule-photo-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+}
+
+@media (max-width: 480px) {
+  .schedule-photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Pengelolaan akun petugas yang tersimpan di Supabase */
+.adm-staff-create{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;padding:1rem;margin:1rem 0;border:1px solid var(--line);border-radius:12px;background:var(--light)}
+.adm-staff-create h5{grid-column:1/-1;margin:0;color:var(--navy)}
+.adm-staff-create .field{margin:0;min-width:0}
+.adm-staff-create input,.adm-staff-create select{width:100%;min-width:0;padding:.65rem .75rem;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff}
+.adm-staff-create button{justify-self:start;align-self:end}
+.adm-staff-create select:disabled{opacity:.55}
+@media(max-width:600px){.adm-staff-create{grid-template-columns:1fr}.adm-staff-create h5{grid-column:auto}}
