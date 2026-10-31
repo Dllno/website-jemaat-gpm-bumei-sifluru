@@ -2372,7 +2372,7 @@ async function loadScheduleFromSupabase() {
   const TAB_ICON = {
     jadwal: 'calendar-check', kolektan: 'hand-holding-heart', beranda: 'church', profil: 'book-open', struktur: 'sitemap',
     sektor: 'people-group', pelayanan: 'hands-holding-circle', berita: 'newspaper', renungan: 'hands-praying',
-    galeri: 'images', pengumuman: 'bullhorn', informasi: 'map-location-dot', pesan: 'inbox', password: 'shield-heart', staff: 'users'
+    galeri: 'images', pengumuman: 'bullhorn', informasi: 'phone', pesan: 'envelope', password: 'shield-heart', staff: 'users'
   };
   const TAB_DESC = {
     jadwal: 'Tempat, hari, dan jam ibadah', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
