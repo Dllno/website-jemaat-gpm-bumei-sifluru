@@ -5,7 +5,7 @@
   const ICON_W = {'arrow-down':384,'arrow-right':448,'arrow-up':384,'bars':448,'bell':448,'book-open':576,'border-all':448,'broom':576,'bullhorn':512,'calendar':448,'calendar-check':448,'calendar-days':448,'calendar-plus':448,'calendar-xmark':448,'chevron-down':512,'chevron-left':320,'chevron-right':320,'child-reaching':384,'church':640,'circle-check':512,'circle-exclamation':512,'circle-info':512,'clock':512,'copy':448,'diamond-turn-right':512,'envelope':512,'eye':576,'facebook-f':320,'globe':512,'hand-holding-heart':576,'hands-holding-circle':640,'hands-praying':640,'handshake-angle':640,'heart':512,'images':576,'instagram':448,'location-dot':384,'magnifying-glass':512,'map':576,'map-location-dot':576,'music':512,'newspaper':512,'paper-plane':512,'people-group':640,'people-roof':640,'phone':512,'route':512,'seedling':512,'share-nodes':448,'shield-heart':512,'sitemap':576,'tag':448,'users':640,'users-line':640,'whatsapp':448,'xmark':384,'youtube':576};
   function icon(name) {
     const w = ICON_W[name] || 512;
-    return '<svg class="icon" viewBox="0 0 ' + w + ' 512" aria-hidden="true"><use href="/icons.svg#' + name + '"></use></svg>';
+    return '<svg class="icon" viewBox="0 0 ' + w + ' 512" aria-hidden="true"><use href="icons.svg#' + name + '"></use></svg>';
   }
 
   // Local photos (e.g. '/images/natal-2026.jpg') are resized and converted to
@@ -635,7 +635,7 @@
     mainNav.classList.remove('open');
     navToggle.setAttribute('aria-expanded', 'false');
     navToggle.setAttribute('aria-label', 'Buka menu navigasi');
-    navToggle.innerHTML = '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#bars"></use></svg>';
+    navToggle.innerHTML = '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#bars"></use></svg>';
   }
 
   navToggle.addEventListener('click', () => {
@@ -643,8 +643,8 @@
     navToggle.setAttribute('aria-expanded', String(isOpen));
     navToggle.setAttribute('aria-label', isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
     navToggle.innerHTML = isOpen
-      ? '<svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#xmark"></use></svg>'
-      : '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#bars"></use></svg>';
+      ? '<svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#xmark"></use></svg>'
+      : '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#bars"></use></svg>';
   });
 
   dropdownToggle.addEventListener('click', (e) => {
@@ -752,7 +752,7 @@
   }
 
   /* ==========================================================
-     8. RENDER PROFIL
+    8. RENDER PROFIL
      ========================================================== */
   const profileImgEl = $('#profileImg');
   const profileImgDefault = profileImgEl ? profileImgEl.getAttribute('src') : '';
@@ -858,35 +858,66 @@
       scheduleEmpty.hidden = false;
       scheduleEmpty.className = 'empty-state';
       scheduleEmpty.innerHTML =
-        '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar-xmark"></use></svg>' +
+        '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar-xmark"></use></svg>' +
         '<strong>Tidak ada jadwal yang cocok</strong>' +
         '<p>Coba ubah kata kunci pencarian atau pilih kategori lain.</p>';
       return;
     }
     scheduleEmpty.hidden = true;
+    const photoUrl = (path) => {
+  if (!path) return '';
 
+  const encodedPath = path
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/');
+
+  return SUPABASE_URL +
+    '/storage/v1/object/public/schedule-photos/' +
+    encodedPath;
+};
     list.forEach((item, i) => {
       const nextDate = nextOccurrence(item);
       const card = document.createElement('article');
       card.className = 'card schedule-card reveal';
       card.style.transitionDelay = Math.min(i * 45, 250) + 'ms';
+      const photoHtml = !item.sektor
+  ? [
+      item.foto_tuan_rumah
+        ? '<div class="schedule-photo-item">' +
+            '<span>Foto Tuan Rumah</span>' +
+            '<img src="' + esc(photoUrl(item.foto_tuan_rumah)) +
+            '" alt="Foto Tuan Rumah" loading="lazy">' +
+          '</div>'
+        : '',
+      item.foto_pemimpin_ibadah
+        ? '<div class="schedule-photo-item">' +
+            '<span>Foto Pemimpin Ibadah</span>' +
+            '<img src="' + esc(photoUrl(item.foto_pemimpin_ibadah)) +
+            '" alt="Foto Pemimpin Ibadah" loading="lazy">' +
+          '</div>'
+        : ''
+    ].join('')
+  : '';
+      
       card.innerHTML =
         '<div class="schedule-top">' +
-          '<div class="schedule-icon"><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="/icons.svg#church"></use></svg></div>' +
+          '<div class="schedule-icon"><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#church"></use></svg></div>' +
         '</div>' +
         '<h3>' + esc(item.title) + '</h3>' +
         '<ul class="schedule-meta">' +
-          '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar"></use></svg><span>' + esc(dayNames[item.day]) + ', pukul ' + esc(item.time) + ' WIT</span></li>' +
-          '<li><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#location-dot"></use></svg><span>' + esc(item.place) + '</span></li>' +
-          '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#tag"></use></svg><span>' + esc(item.categoryLabel) + '</span></li>' +
+          '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar"></use></svg><span>' + esc(dayNames[item.day]) + ', pukul ' + esc(item.time) + ' WIT</span></li>' +
+          '<li><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#location-dot"></use></svg><span>' + esc(item.place) + '</span></li>' +
+          '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#tag"></use></svg><span>' + esc(item.categoryLabel) + '</span></li>' +
         '</ul>' +
         '<p class="schedule-note">' + esc(item.note) + '</p>' +
+        (photoHtml ? '<div class="schedule-photos">' + photoHtml + '</div>' : '') +
         '<p class="schedule-note" style="background:transparent;padding:0;margin-bottom:.9rem;font-size:.8rem;">' +
-          '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#clock"></use></svg> Berikutnya: ' + esc(formatDateTimeID(nextDate)) +
+          '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#clock"></use></svg> Berikutnya: ' + esc(formatDateTimeID(nextDate)) +
         '</p>' +
         '<div class="schedule-foot">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-ics="' + esc(item.id) + '">' +
-            '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar-plus"></use></svg> Tambahkan ke Kalender' +
+            '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar-plus"></use></svg> Tambahkan ke Kalender' +
           '</button>' +
         '</div>';
       scheduleGrid.appendChild(card);
@@ -984,7 +1015,7 @@
         '<h3>' + esc(m.title) + '</h3>' +
         '<p>' + esc(m.short) + '</p>' +
         '<button type="button" class="btn btn-ghost btn-sm" data-ministry="' + esc(m.id) + '">' +
-          'Pelajari <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#arrow-right"></use></svg>' +
+          'Pelajari <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#arrow-right"></use></svg>' +
         '</button>';
       grid.appendChild(card);
     });
@@ -1071,7 +1102,7 @@
       newsEmpty.hidden = false;
       newsEmpty.className = 'empty-state';
       newsEmpty.innerHTML =
-        '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#newspaper"></use></svg>' +
+        '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#newspaper"></use></svg>' +
         '<strong>Berita tidak ditemukan</strong>' +
         '<p>Tidak ada artikel yang sesuai dengan pencarian atau kategori yang dipilih.</p>';
       newsLoadMoreWrap.hidden = true;
@@ -1089,11 +1120,11 @@
           '<span class="news-cat">' + esc(article.categoryLabel) + '</span>' +
         '</div>' +
         '<div class="news-body">' +
-          '<p class="news-date"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar"></use></svg> ' + esc(formatDateID(article.date)) + '</p>' +
+          '<p class="news-date"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar"></use></svg> ' + esc(formatDateID(article.date)) + '</p>' +
           '<h3>' + esc(article.title) + '</h3>' +
           '<p class="news-excerpt">' + esc(article.excerpt) + '</p>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-news="' + esc(article.id) + '">' +
-            'Baca Selengkapnya <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#arrow-right"></use></svg>' +
+            'Baca Selengkapnya <svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#arrow-right"></use></svg>' +
           '</button>' +
         '</div>';
       newsGrid.appendChild(card);
@@ -1144,6 +1175,7 @@
   let devotionIndex = 0;
 
   function renderDevotion() {
+    if (!devotionCard) return;
     if (devotionIndex >= dailyDevotions.length || devotionIndex < 0) devotionIndex = 0;
     const d = dailyDevotions[devotionIndex];
     if (!d) return;
@@ -1158,21 +1190,21 @@
       '</div>' +
       '<div class="devotion-actions">' +
         '<button type="button" class="btn btn-gold btn-sm" id="devCopy">' +
-          '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#copy"></use></svg> Salin Teks</button>' +
+          '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#copy"></use></svg> Salin Teks</button>' +
         '<button type="button" class="btn btn-outline btn-sm" id="devShare">' +
-          '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#share-nodes"></use></svg> Bagikan Renungan</button>' +
+          '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#share-nodes"></use></svg> Bagikan Renungan</button>' +
       '</div>' +
       '<div class="devotion-nav">' +
         '<button type="button" class="btn btn-outline btn-sm" id="devPrev">' +
-          '<svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="/icons.svg#chevron-left"></use></svg> Sebelumnya</button>' +
+          '<svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="icons.svg#chevron-left"></use></svg> Sebelumnya</button>' +
         '<div class="devotion-dots" id="devDots" role="tablist" aria-label="Pilih renungan"></div>' +
         '<span class="devotion-counter">' + (devotionIndex + 1) + ' / ' + dailyDevotions.length + '</span>' +
         '<button type="button" class="btn btn-outline btn-sm" id="devNext">' +
-          'Berikutnya <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="/icons.svg#chevron-right"></use></svg></button>' +
+          'Berikutnya <svg class="icon" viewBox="0 0 320 512" aria-hidden="true"><use href="icons.svg#chevron-right"></use></svg></button>' +
       '</div>';
 
     const dots = $('#devDots');
-    dailyDevotions.forEach((item, i) => {
+    if (dots) dailyDevotions.forEach((item, i) => {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.className = i === devotionIndex ? 'is-active' : '';
@@ -1183,7 +1215,8 @@
       dots.appendChild(dot);
     });
 
-    $('#devCopy').addEventListener('click', () => {
+    const copyBtn = $('#devCopy');
+    if (copyBtn) copyBtn.addEventListener('click', () => {
       const text = d.title + '\n\n' + d.verse + ' (' + d.reference + ')\n\n' + d.reflection +
         '\n\nPertanyaan Perenungan:\n' + d.questions.map((q, i) => (i + 1) + '. ' + q).join('\n');
       copyText(text)
@@ -1191,15 +1224,18 @@
         .catch(() => toast('Gagal menyalin teks renungan.', 'error'));
     });
 
-    $('#devShare').addEventListener('click', () => {
+    const shareBtn = $('#devShare');
+    if (shareBtn) shareBtn.addEventListener('click', () => {
       shareContent('Renungan: ' + d.title, d.verse + ' (' + d.reference + ')');
     });
 
-    $('#devPrev').addEventListener('click', () => {
+    const prevBtn = $('#devPrev');
+    if (prevBtn) prevBtn.addEventListener('click', () => {
       devotionIndex = (devotionIndex - 1 + dailyDevotions.length) % dailyDevotions.length;
       renderDevotion();
     });
-    $('#devNext').addEventListener('click', () => {
+    const nextBtn = $('#devNext');
+    if (nextBtn) nextBtn.addEventListener('click', () => {
       devotionIndex = (devotionIndex + 1) % dailyDevotions.length;
       renderDevotion();
     });
@@ -1214,6 +1250,7 @@
 
   function renderGalleryFilters() {
     const box = $('#galleryFilters');
+    if (!box) return;
     box.innerHTML = '';
     galleryCategories.forEach((cat) => {
       const btn = document.createElement('button');
@@ -1235,6 +1272,7 @@
   }
 
   function renderGallery() {
+    if (!galleryGrid || !galleryEmpty) return;
     const list = getFilteredGallery();
     galleryGrid.innerHTML = '';
 
@@ -1242,7 +1280,7 @@
       galleryEmpty.hidden = false;
       galleryEmpty.className = 'empty-state';
       galleryEmpty.innerHTML =
-        '<svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#images"></use></svg>' +
+        '<svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#images"></use></svg>' +
         '<strong>Belum ada foto pada kategori ini</strong>' +
         '<p>Silakan pilih kategori lain.</p>';
       return;
@@ -1274,13 +1312,14 @@
   function renderAnnouncements() {
     const list = $('#announceList');
     const empty = $('#announceEmpty');
+    if (!list || !empty) return;
     list.innerHTML = '';
 
     if (!announcements.length) {
       empty.hidden = false;
       empty.className = 'empty-state';
       empty.innerHTML =
-        '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#bell"></use></svg>' +
+        '<svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#bell"></use></svg>' +
         '<strong>Belum ada pengumuman</strong><p>Pengumuman baru akan ditampilkan di sini.</p>';
       return;
     }
@@ -1294,20 +1333,21 @@
         '<div class="announce-body">' +
           '<div class="announce-meta">' +
             '<span class="prio-badge prio-' + esc(ann.priority) + '">' + esc(ann.priorityLabel) + '</span>' +
-            '<span><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#calendar"></use></svg> ' + esc(formatDateID(ann.date)) + '</span>' +
+            '<span><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar"></use></svg> ' + esc(formatDateID(ann.date)) + '</span>' +
           '</div>' +
           '<h3>' + esc(ann.title) + '</h3>' +
           '<p class="announce-excerpt">' + esc(ann.excerpt) + '</p>' +
         '</div>' +
         '<div class="announce-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-ann="' + esc(ann.id) + '">Baca</button>' +
-          '<button type="button" class="btn btn-ghost btn-sm" data-ann-copy="' + esc(ann.id) + '" aria-label="Salin pengumuman"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="/icons.svg#copy"></use></svg></button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-ann-copy="' + esc(ann.id) + '" aria-label="Salin pengumuman"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#copy"></use></svg></button>' +
         '</div>';
       list.appendChild(item);
     });
   }
 
-  $('#announceList').addEventListener('click', (e) => {
+  const announceListEl = $('#announceList');
+  if (announceListEl) announceListEl.addEventListener('click', (e) => {
     const readBtn = e.target.closest('[data-ann]');
     const copyBtn = e.target.closest('[data-ann-copy]');
 
@@ -1340,19 +1380,21 @@
      15. RENDER LOKASI & KONTAK
      ========================================================== */
   function renderLocation() {
-    $('#locAddress').textContent = contactInformation.address.value;
-    $('#locBuilding').textContent = contactInformation.building.value;
-    $('#locServiceArea').textContent = contactInformation.serviceArea.value;
-    $('#locClassis').textContent = contactInformation.classis.value;
-    $('#locBoundaries').textContent = contactInformation.boundaries.value;
-    $('#locDirections').textContent = contactInformation.directions;
-    $('#locServiceTime').textContent = contactInformation.serviceTime;
+    const setText = (selector, value) => { const el = $(selector); if (el) el.textContent = value == null ? '' : value; };
+    setText('#locAddress', contactInformation.address.value);
+    setText('#locBuilding', contactInformation.building.value);
+    setText('#locServiceArea', contactInformation.serviceArea.value);
+    setText('#locClassis', contactInformation.classis.value);
+    setText('#locBoundaries', contactInformation.boundaries.value);
+    setText('#locDirections', contactInformation.directions);
+    setText('#locServiceTime', contactInformation.serviceTime);
 
     const q = encodeURIComponent(contactInformation.mapsQuery);
     const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + q;
     const dirUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
 
-    $('#mapsBtn').href = mapsUrl;
+    const mapsBtn = $('#mapsBtn');
+    if (mapsBtn) mapsBtn.href = mapsUrl;
 
     const dirBtn = $('#directionsBtn');
     if (dirBtn) dirBtn.href = dirUrl;
@@ -1375,6 +1417,7 @@
 
   function renderContact() {
     const list = $('#contactList');
+    if (!list) return;
     list.innerHTML = '';
 
     const items = [
@@ -1425,9 +1468,9 @@
 
     const footerContact = $('#footerContact');
     footerContact.innerHTML =
-      '<p><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="/icons.svg#location-dot"></use></svg> ' + esc(contactInformation.address.value) + '</p>' +
-      '<p><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="/icons.svg#church"></use></svg> ' + esc(contactInformation.building.value) + '</p>' +
-      '<p><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="/icons.svg#sitemap"></use></svg> ' + esc(contactInformation.classis.value) + '</p>';
+      '<p><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#location-dot"></use></svg> ' + esc(contactInformation.address.value) + '</p>' +
+      '<p><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#church"></use></svg> ' + esc(contactInformation.building.value) + '</p>' +
+      '<p><svg class="icon" viewBox="0 0 576 512" aria-hidden="true"><use href="icons.svg#sitemap"></use></svg> ' + esc(contactInformation.classis.value) + '</p>';
   }
 
   /* ==========================================================
@@ -1525,32 +1568,77 @@
       if (consent.checked) { consentErr.textContent = ''; consent.setAttribute('aria-invalid', 'false'); }
     });
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      formStatus.textContent = '';
-      formStatus.className = 'form-status';
 
-      if (!validate()) {
-        formStatus.textContent = 'Periksa kembali kolom yang ditandai merah.';
-        formStatus.classList.add('is-error');
-        const firstInvalid = form.querySelector('[aria-invalid="true"]');
-        if (firstInvalid) firstInvalid.focus();
-        return;
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  formStatus.textContent = '';
+  formStatus.className = 'form-status';
+
+  if (!validate()) {
+    formStatus.textContent = 'Periksa kembali kolom yang ditandai merah.';
+    formStatus.classList.add('is-error');
+
+    const firstInvalid = form.querySelector('[aria-invalid="true"]');
+    if (firstInvalid) firstInvalid.focus();
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner"></span> Mengirim...';
+
+  try {
+    const response = await fetch(
+      'https://uahfjcvaplypurhwzfbt.supabase.co/functions/v1/admin-auth',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_S3cEUafXUwWUCyLdwSmFDw_-rVmzelZ'
+        },
+        body: JSON.stringify({
+          action: 'submit_contact',
+          nama: fields.nama.el.value.trim(),
+          kontak: fields.kontak.el.value.trim(),
+          subjek: fields.subjek.el.value.trim(),
+          pesan: fields.pesan.el.value.trim()
+        })
       }
+    );
 
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Mengirim...';
+    const result = await response.json();
 
-      window.setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="/icons.svg#paper-plane"></use></svg> Kirim Pesan';
-        formStatus.textContent = 'Terima kasih. Formulir sedang dalam proses integrasi sistem; untuk kebutuhan mendesak, silakan hubungi pengurus jemaat secara langsung.';
-        formStatus.classList.add('is-ok');
-        toast('Pesan Anda telah dicatat. Untuk respons lebih cepat, hubungi pengurus jemaat.', 'info');
-        form.reset();
-        Object.keys(fields).forEach((key) => setError(key, ''));
-      }, 1300);
-    });
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Pesan gagal dikirim.');
+    }
+
+    formStatus.textContent = 'Pesan berhasil dikirim. Terima kasih telah menghubungi kami.';
+    formStatus.classList.add('is-success');
+
+    toast('Pesan berhasil dikirim.', 'success');
+
+    form.reset();
+
+    Object.keys(fields).forEach((key) => setError(key, ''));
+
+    consentErr.textContent = '';
+    consent.setAttribute('aria-invalid', 'false');
+
+  } catch (error) {
+    console.error('Kesalahan pengiriman pesan:', error);
+
+    formStatus.textContent =
+      error.message || 'Pesan gagal dikirim. Silakan coba kembali.';
+    formStatus.classList.add('is-error');
+
+    toast('Pesan gagal dikirim.', 'error');
+
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML =
+      '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true"><use href="icons.svg#paper-plane"></use></svg> Kirim Pesan';
+  }
+});
   })();
 
   /* ==========================================================
@@ -2066,7 +2154,7 @@
     const pilau =
       '<div class="oc-pilau">' +
         '<div class="oc-card oc-pilau-card">' +
-          '<p class="oc-role">Majelis Pilau Nila</p>' +
+          '<p class="oc-role">Majelis Pulau Nila</p>' +
           '<div class="oc-pilau-list">' +
             d.pilauNila.map((p, i) =>
               '<div class="oc-person">' +
@@ -2115,11 +2203,139 @@
   //
   // GANTI KATA SANDI AKUN BAWAAN: buat hash SHA-256 dari teks  gpm-bsf:NAMAPENGGUNA:SANDIBARU
   //   contoh teks: gpm-bsf:admin:SandiBaruSaya  -> tempel hasilnya pada 'hash' akun yang sesuai.
+  const SUPABASE_URL = 'https://uahfjcvaplypurhwzfbt.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_S3cEUafXUwWUCyLdwSmFDw_-rVmzelZ';
+  const ADMIN_AUTH_URL = SUPABASE_URL + '/functions/v1/admin-auth';
+  
+async function uploadSchedulePhoto(file, scheduleId, photoType, accessToken) {
+  if (!file) return null;
+
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File harus berupa gambar.');
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('Ukuran foto maksimal 5 MB.');
+  }
+
+  const extension = (file.name.split('.').pop() || 'jpg')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  const safeId = String(scheduleId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileName = Date.now() + '_' + photoType + '.' + extension;
+  const path = safeId + '/' + fileName;
+
+  const encodedPath = path
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/');
+
+  const response = await fetch(
+    SUPABASE_URL + '/storage/v1/object/schedule-photos/' + encodedPath,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': file.type,
+        'x-upsert': 'true'
+      },
+      body: file
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(
+      result.message || result.error || 'Gagal mengunggah foto ke Supabase.'
+    );
+  }
+
+  return path;
+}
+
+function schedulePhotoPublicUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path) || path.indexOf('data:') === 0 || path.charAt(0) === '/') return path;
+  return SUPABASE_URL + '/storage/v1/object/public/schedule-photos/' +
+    path.split('/').map(encodeURIComponent).join('/');
+}
+
+function schedulePhotoPath(value) {
+  if (!value) return null;
+  const marker = '/storage/v1/object/public/schedule-photos/';
+  const at = String(value).indexOf(marker);
+  if (at >= 0) return decodeURIComponent(String(value).slice(at + marker.length));
+  return value;
+}
+
+async function uploadScheduleDataUrl(dataUrl, scheduleId, photoType, accessToken) {
+  if (!dataUrl || dataUrl.indexOf('data:') !== 0) return schedulePhotoPath(dataUrl);
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const file = new File([blob], photoType + '.jpg', { type: blob.type || 'image/jpeg' });
+  return await uploadSchedulePhoto(file, scheduleId, photoType, accessToken);
+}
+
+async function loadScheduleFromSupabase() {
+  try {
+    const response = await fetch(
+      SUPABASE_URL + '/rest/v1/schedule_overrides?select=*',
+      {
+        headers: {
+          'apikey': SUPABASE_PUBLISHABLE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Gagal mengambil data jadwal dari Supabase.');
+    }
+
+    const data = await response.json();
+
+    scheduleOverrides = {};
+
+    data.forEach((item) => {
+      scheduleOverrides[item.id] = {
+        place: item.place,
+        day: item.day,
+        time: item.time,
+        week: item.week,
+        by: item.updated_by,
+        at: item.updated_at,
+        title: item.title,
+        note: item.note,
+        foto_tuan_rumah: item.foto_tuan_rumah,
+        foto_pemimpin_ibadah: item.foto_pemimpin_ibadah,
+        nama_tuan_rumah: item.nama_tuan_rumah || '',
+        nama_pemimpin_ibadah: item.nama_pemimpin_ibadah || '',
+        status_pemimpin_ibadah: item.status_pemimpin_ibadah || ''
+      };
+    });
+
+    applyScheduleOverrides();
+
+    renderSchedules();
+
+  } catch (error) {
+    console.error('Gagal memuat jadwal:', error);
+  }
+}
+
   const AUTH_PREFIX = 'gpm-bsf:';
   const adminAccounts = [
-    { username: 'superadmin', name: 'Super Admin',     role: 'superadmin', hash: 'cfffb1c3d485b14743f79d1d6c17bf172deedd5b008e9460f703bdee5903ca91' },
-    { username: 'admin',      name: 'Admin',           role: 'admin',      hash: '06be7f68558cc50a412cffbeedcc20cf06c8e5d4b3e9d7ca2a31c04aa3f26459' },
-    { username: 'bendahara',  name: 'Admin Bendahara', role: 'bendahara',  hash: '449363a9803acb89e7be091acfb35fae0d2dd6019714ee33aec4cd80f9c32334' }
+    { id: 'superadmin-1', username: 'supergereja', name: 'Super Admin 1', role: 'superadmin', hash: '0ee633214e76f9b8ae6a48c723fd4cfe92d40d7c97d66baa99b4229b17799ef3' },
+    { id: 'superadmin-2', username: 'superkmj', name: 'Super Admin 2', role: 'superadmin', hash: 'a13e0077d427634dd50cd4b150968b2a8f2266f767d792b45643dfc6b40a61f5' },
+    { id: 'sektor-embun-hermon', username: 'admin_hermon', name: 'Admin Sektor Embun Hermon', role: 'admin', sector: 'Embun Hermon', hash: '8d4de99c42607f0779ab28ca2bf3a7207ab393f3e5dd36afe504c3c1cb5cf594' },
+    { id: 'sektor-imanuel', username: 'admin_imanuel', name: 'Admin Sektor Imanuel', role: 'admin', sector: 'Imanuel', hash: '171955253501a997b007ecb60a009d40190fef38ce6fcf2aeb0470e5f8b00a1c' },
+    { id: 'sektor-maranatha', username: 'admin_maranatha', name: 'Admin Sektor Maranatha', role: 'admin', sector: 'Maranatha', hash: '5d34f060f5b1867490a7e75713f3c5539f1c7c32142dac140e3d65185301495a' },
+    { id: 'sektor-ebenhaezer', username: 'admin_ebenhaezer', name: 'Admin Sektor Ebenhaezer', role: 'admin', sector: 'Ebenhaezer', hash: '7ef3b0c686adb5e71d0c566718a608a00aa7753a3c7deb8169d57d8b0644c896' },
+    { id: 'sektor-efrata', username: 'admin_efrata', name: 'Admin Sektor Efrata', role: 'admin', sector: 'Efrata', hash: '50c7ca35c3754be79c512a8fe640a9dff12f5685010feef286302f3d8ba5ba55' },
+    { id: 'sektor-lahairoi', username: 'admin_lahairoi', name: 'Admin Sektor Lahairoi', role: 'admin', sector: 'Lahairoi', hash: 'a3d0842c38e8ec8bc132264caa3c4426268cb23557377d2d87cf8515bb8688ad' },
+    { id: 'bendahara-1', username: 'bendahara_keuangan1', name: 'Admin Bendahara 1', role: 'bendahara', hash: '636eaf57329022c93fff5875109da1c4c2f1a8905e750958e515849db1df0e10' },
+    { id: 'bendahara-2', username: 'bendahara_keuangan2', name: 'Admin Bendahara 2', role: 'bendahara', hash: 'f8ffad89248597032cc79d00da2c304c9d3183b1d14b7b5c4cc7a9326b16a661' }
   ];
   const ROLE_LABEL = { superadmin: 'Super Admin', admin: 'Admin', bendahara: 'Admin Bendahara' };
 
@@ -2143,27 +2359,27 @@
 
   // Hak akses: super admin = seluruh website; admin = jadwal ibadah saja; bendahara = kolektan saja
   const ROLE_TABS = {
-    superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'password', 'staff'],
+    superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff'],
     admin: ['jadwal', 'password'],
     bendahara: ['kolektan', 'password']
   };
   const TAB_LABEL = {
     jadwal: 'Jadwal Ibadah', kolektan: 'Kolektan', beranda: 'Beranda', profil: 'Profil', struktur: 'Struktur',
     sektor: 'Sektor', pelayanan: 'Pelayanan', berita: 'Berita', renungan: 'Renungan', galeri: 'Galeri',
-    pengumuman: 'Pengumuman', informasi: 'Informasi & Kontak', password: 'Ubah Kata Sandi', staff: 'ADMIN YANG BERTUGAS'
+    pengumuman: 'Pengumuman', informasi: 'Informasi & Kontak', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas'
   };
   // Ikon & keterangan singkat untuk halaman "Menu Panel"
   const TAB_ICON = {
     jadwal: 'calendar-check', kolektan: 'hand-holding-heart', beranda: 'church', profil: 'book-open', struktur: 'sitemap',
     sektor: 'people-group', pelayanan: 'hands-holding-circle', berita: 'newspaper', renungan: 'hands-praying',
-    galeri: 'images', pengumuman: 'bullhorn', informasi: 'map-location-dot', password: 'shield-heart', staff: 'users'
+    galeri: 'images', pengumuman: 'bullhorn', informasi: 'map-location-dot', pesan: 'inbox', password: 'shield-heart', staff: 'users'
   };
   const TAB_DESC = {
     jadwal: 'Tempat, hari, dan jam ibadah', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
     profil: 'Profil, visi, misi, sejarah', struktur: 'Majelis & kepengurusan', sektor: 'Tuan rumah & pemimpin ibadah',
     pelayanan: 'Kartu pelayanan jemaat', berita: 'Berita & kegiatan', renungan: 'Renungan harian',
     galeri: 'Foto dokumentasi', pengumuman: 'Pengumuman jemaat', informasi: 'Alamat, kontak, peta, rekening',
-    password: 'Ganti kata sandi akun sendiri', staff: 'Daftar 6 Admin dan 2 Bendahara'
+    pesan: 'Pesan dari formulir Kontak pengunjung', password: 'Ganti kata sandi akun sendiri', staff: 'Daftar 6 Admin dan 2 Bendahara'
   };
 
   const LS_JADWAL = 'gpm-bsf-jadwal';
@@ -2186,6 +2402,14 @@
       '.lg-role strong{font-size:.95rem}' +
       '.lg-role small{font-size:.78rem;color:var(--muted)}' +
       '.lg-link{border:none;background:transparent;padding:0;color:var(--sea);font-weight:700;font-size:inherit;cursor:pointer;text-decoration:underline}' +
+      '.field .password-toggle-wrap{position:relative;display:block;width:100%}' +
+      '.field .password-toggle-wrap input{width:100%;padding-right:3.1rem}' +
+      '.password-toggle-wrap input::-ms-reveal,.password-toggle-wrap input::-ms-clear{display:none;width:0;height:0}' +
+      '.password-toggle-wrap input::-webkit-credentials-auto-fill-button{visibility:hidden;display:none!important;pointer-events:none;height:0;width:0;margin:0}' +
+      '.password-toggle-btn{position:absolute;right:.45rem;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:2.25rem;height:2.25rem;padding:.35rem;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;z-index:2}' +
+      '.password-toggle-btn:hover{background:rgba(23,54,93,.08);color:var(--navy)}' +
+      '.password-toggle-btn:focus-visible{outline:3px solid var(--gold);outline-offset:1px}' +
+      '.password-toggle-btn svg{width:1.15rem;height:1.15rem;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}' +
       '.field label small{font-weight:400;color:var(--muted)}' +
       /* Menu Panel (halaman utama panel admin) */
       '.adm-menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.4rem}' +
@@ -2200,6 +2424,46 @@
       '@media (max-width:760px){.adm-menu-grid{grid-template-columns:repeat(2,1fr)}}' +
       '@media (max-width:460px){.adm-menu-grid{grid-template-columns:1fr}}';
     document.head.appendChild(st);
+  })();
+
+  // Tombol mata untuk seluruh input password, termasuk formulir yang dirender ulang.
+  (function initPasswordVisibilityToggles() {
+    const eyeOpen = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    const eyeClosed = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8"></path><path d="M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10.8 10.8 0 0 0 4-.8"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>';
+    function addToggle(input) {
+      if (!(input instanceof HTMLInputElement) || input.type !== 'password' || input.dataset.passwordToggleReady === 'true') return;
+      input.dataset.passwordToggleReady = 'true';
+      const wrap = document.createElement('span');
+      wrap.className = 'password-toggle-wrap';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'password-toggle-btn';
+      button.setAttribute('aria-label', 'Tampilkan kata sandi');
+      button.setAttribute('aria-pressed', 'false');
+      button.innerHTML = eyeClosed;
+      button.addEventListener('click', function () {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(show));
+        button.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+        button.innerHTML = show ? eyeOpen : eyeClosed;
+        input.focus({ preventScroll: true });
+      });
+      wrap.appendChild(button);
+    }
+    function scan(root) {
+      if (root.matches && root.matches('input[type="password"]')) addToggle(root);
+      if (root.querySelectorAll) root.querySelectorAll('input[type="password"]').forEach(addToggle);
+    }
+    scan(document);
+    const observer = new MutationObserver(function (records) {
+      records.forEach(function (record) {
+        record.addedNodes.forEach(function (node) { if (node.nodeType === 1) scan(node); });
+      });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
   })();
 
   /* ---------- Util ---------- */
@@ -2323,20 +2587,41 @@
   let scheduleOverrides = lsGet(LS_JADWAL, {});
   if (!scheduleOverrides || typeof scheduleOverrides !== 'object') scheduleOverrides = {};
 
-  function applyScheduleOverrides() {
-    scheduleRegistry().forEach((r) => {
-      const o = scheduleOverrides[r.id];
-      if (!o) return;
-      if (o.place) r.ref.place = o.place;
-      if (typeof o.day === 'number' && o.day >= 0 && o.day <= 6) r.ref.day = o.day;
-      if (/^([01]\d|2[0-3]):[0-5]\d$/.test(o.time || '')) r.ref.time = o.time;
-      // Nama kegiatan & keterangan hanya untuk jadwal umum (diubah oleh Super Admin)
-      if (r.ref.title !== undefined) {
-        if (o.title) r.ref.title = o.title;
-        if (typeof o.note === 'string' && o.note) r.ref.note = o.note;
+
+function applyScheduleOverrides() {
+  scheduleRegistry().forEach((r) => {
+    const o = scheduleOverrides[r.id];
+    if (!o) return;
+
+    if (o.place) r.ref.place = o.place;
+
+    if (typeof o.day === 'number' && o.day >= 0 && o.day <= 6) {
+      r.ref.day = o.day;
+    }
+
+    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(o.time || '')) {
+      r.ref.time = o.time;
+    }
+
+    // Nama kegiatan & keterangan hanya untuk jadwal umum.
+    if (r.ref.title !== undefined) {
+      if (o.title) r.ref.title = o.title;
+      if (typeof o.note === 'string' && o.note) {
+        r.ref.note = o.note;
       }
-    });
-  }
+    }
+
+    // Terapkan lokasi foto dari Supabase.
+    r.ref.foto_tuan_rumah = o.foto_tuan_rumah || null;
+    r.ref.foto_pemimpin_ibadah = o.foto_pemimpin_ibadah || null;
+    if (r.ref.host && o.nama_tuan_rumah) r.ref.host.name = o.nama_tuan_rumah;
+    if (r.ref.leader && o.nama_pemimpin_ibadah) r.ref.leader.name = o.nama_pemimpin_ibadah;
+    if (r.ref.leader && o.status_pemimpin_ibadah) r.ref.leader.status = o.status_pemimpin_ibadah;
+    if (r.ref.host && o.foto_tuan_rumah) r.ref.host.photo = schedulePhotoPublicUrl(o.foto_tuan_rumah);
+    if (r.ref.leader && o.foto_pemimpin_ibadah) r.ref.leader.photo = schedulePhotoPublicUrl(o.foto_pemimpin_ibadah);
+  });
+}
+
   applyScheduleOverrides();
 
   function sortKolektan() { kolektanData.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); }
@@ -2493,9 +2778,21 @@
 
   (function restoreSession() {
     try {
-      const s = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
-      const acc = s && getAccount(s.username);
-      if (acc && s.hash === acc.hash) currentUser = acc;
+      const saved = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+      if (!saved || !saved.access_token || !saved.user) return;
+      fetch(SUPABASE_URL + '/auth/v1/user', {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + saved.access_token }
+      }).then((r) => {
+        if (!r.ok) throw new Error('Sesi berakhir');
+        return r.json();
+      }).then(() => {
+        currentUser = saved.user;
+        updateLoginUi();
+      }).catch(() => {
+        sessionStorage.removeItem(SS_SESSION);
+        currentUser = null;
+        updateLoginUi();
+      });
     } catch (e) { currentUser = null; }
   })();
 
@@ -2538,6 +2835,8 @@
         '<div class="modal-body">' +
           '<div class="field"><label for="loginUser">Email akun / username terdaftar</label>' +
             '<input type="text" id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false" required /></div>' +
+          '<div class="field" id="loginSectorWrap" hidden><label for="loginSector">Pilih sektor</label>' +
+            '<select id="loginSector"><option value="">-- Pilih sektor --</option><option>Embun Hermon</option><option>Imanuel</option><option>Maranatha</option><option>Ebenhaezer</option><option>Efrata</option><option>Lahairoi</option></select></div>' +
           '<div class="field"><label for="loginPass">Kata sandi</label>' +
             '<input type="password" id="loginPass" autocomplete="current-password" required /></div>' +
           '<p class="field-error" id="loginErr" role="alert"></p>' +
@@ -2590,6 +2889,8 @@
   const regForm = $('#regForm');
   const loginUser = $('#loginUser');
   const loginPass = $('#loginPass');
+  const loginSector = $('#loginSector');
+  const loginSectorWrap = $('#loginSectorWrap');
   const loginErr = $('#loginErr');
   const regErr = $('#regErr');
   const lgChoose = $('#lgChoose');
@@ -2606,6 +2907,7 @@
   function lgView(v) {
     lgChoose.hidden = v !== 'choose';
     loginForm.hidden = v !== 'login';
+    if (loginSectorWrap) loginSectorWrap.hidden = !(v === 'login' && lgRole === 'admin');
     regForm.hidden = v !== 'reg';
     const label = lgRole ? ROLE_LABEL[lgRole] : '';
     $('#lgEyebrow').textContent = v === 'choose' ? 'Khusus Pengurus' : label;
@@ -2669,30 +2971,53 @@
     });
   }
 
-  // Masuk (hanya username & password; peran sudah dipilih sebelumnya)
-  loginForm.addEventListener('submit', (e) => {
+  // Masuk melalui Supabase Edge Function (akun diverifikasi di server).
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginErr.textContent = '';
-    const raw = loginUser.value.trim().toLowerCase();
-    const acc = getAccount(raw) || getAccount(normPhone(raw));
-    if (!acc || sha256(AUTH_PREFIX + acc.username + ':' + loginPass.value) !== acc.hash) {
-      loginErr.textContent = 'Username atau kata sandi salah.';
+    const username = loginUser.value.trim().toLowerCase();
+    const password = loginPass.value;
+    const sector = lgRole === 'admin' ? loginSector.value : null;
+    if (!username || !password || (lgRole === 'admin' && !sector)) {
+      loginErr.textContent = lgRole === 'admin' && !sector ? 'Silakan pilih sektor terlebih dahulu.' : 'Masukkan username dan kata sandi.';
+      return;
+    }
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Memeriksa…'; }
+    try {
+      const response = await fetch(ADMIN_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ action: 'login', username, password, sector })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !result.user || !result.access_token || !result.refresh_token) {
+        throw new Error(result.message || 'Username, kata sandi, atau pilihan sektor tidak sesuai.');
+      }
+      if (result.user.role !== lgRole) {
+        throw new Error('Akun ini tidak terdaftar pada jenis login yang dipilih.');
+      }
+      // Validasi token ke Supabase Auth sebelum membuat sesi panel.
+      const verify = await fetch(SUPABASE_URL + '/auth/v1/user', {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + result.access_token }
+      });
+      if (!verify.ok) throw new Error('Sesi Supabase tidak dapat diverifikasi. Silakan coba masuk kembali.');
+      const user = Object.assign({}, result.user, { email: result.user.email || username, name: result.user.name || result.user.username || username });
+      currentUser = user;
+      admTab = null;
+      sessionStorage.setItem(SS_SESSION, JSON.stringify({ user, access_token: result.access_token, refresh_token: result.refresh_token }));
+      loginForm.reset();
+      updateLoginUi();
+      closeOverlay(loginOverlay);
+      openPanel();
+      toast('Berhasil masuk sebagai ' + ROLE_LABEL[user.role] + '.', 'success');
+    } catch (err) {
+      loginErr.textContent = err.message || 'Tidak dapat menghubungi server. Periksa koneksi internet.';
       loginPass.value = '';
       loginPass.focus();
-      return;
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Masuk'; }
     }
-    if (acc.role !== lgRole) {
-      loginErr.textContent = 'Akun ini terdaftar sebagai ' + ROLE_LABEL[acc.role] + '. Silakan pilih pintu masuk yang sesuai.';
-      return;
-    }
-    currentUser = acc;
-    admTab = null;
-    try { sessionStorage.setItem(SS_SESSION, JSON.stringify({ username: acc.username, hash: acc.hash })); } catch (err) {}
-    loginForm.reset();
-    updateLoginUi();
-    closeOverlay(loginOverlay);
-    openPanel();
-    toast('Berhasil masuk sebagai ' + ROLE_LABEL[acc.role] + '.', 'success');
   });
 
   $('#admLogout').addEventListener('click', () => {
@@ -2786,12 +3111,128 @@
     else if (admTab === 'kolektan' && can('kolektan')) renderAdmKolektan();
     else if (admTab === 'password' && can('password')) renderAdmPassword();
     else if (admTab === 'staff' && currentUser.role === 'superadmin') renderAdmStaff();
+    else if (admTab === 'pesan' && currentUser.role === 'superadmin') renderAdmPesan();
     else if (SITE_TABS[admTab] && can(admTab)) renderSiteTab();
     // Tombol "Kembali ke Menu Panel" di bagian atas setiap menu (level atas)
     if (admMulti() && admTab !== null && admAtTop()) {
       admBody.insertAdjacentHTML('afterbegin', admMenuBackHtml());
     }
   }
+
+
+
+/* -- Kontak & Pesan: Supabase + tampilan CSS -- */
+
+async function renderAdmPesan() {
+  if (!currentUser || currentUser.role !== 'superadmin') return;
+
+  const session = JSON.parse(
+    sessionStorage.getItem(SS_SESSION) || 'null'
+  );
+  const accessToken = session?.access_token;
+
+  admBody.innerHTML =
+    '<div class="adm-intro">' +
+      '<h3>Kontak &amp; Pesan</h3>' +
+      '<p>Kelola pesan yang dikirim pengunjung website Jemaat GPM Bumei Sifluru.</p>' +
+    '</div>' +
+    '<div class="adm-messages"><p>Memuat pesan...</p></div>';
+
+  admBody.scrollTop = 0;
+
+  if (!accessToken) {
+    admBody.querySelector('.adm-messages').innerHTML =
+      '<p class="form-status is-error">Sesi login tidak ditemukan. Silakan login kembali.</p>';
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      SUPABASE_URL + '/functions/v1/admin-auth',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify({
+          action: 'get_contact_messages'
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Gagal mengambil pesan.');
+    }
+
+    const messages = result.messages || [];
+    const unread = messages.filter(m => m.status === 'unread').length;
+    const container = admBody.querySelector('.adm-messages');
+
+    const statusLabel = {
+      unread: 'Belum Dibaca',
+      read: 'Sudah Dibaca',
+      handled: 'Sudah Ditindaklanjuti'
+    };
+
+    container.innerHTML =
+      '<div class="adm-messages-header">' +
+        '<div><strong>Daftar Pesan Pengunjung</strong>' +
+        '<p style="margin:.3rem 0 0;color:var(--muted)">Pesan yang masuk melalui formulir kontak.</p></div>' +
+        '<button type="button" class="adm-messages-refresh" data-pesan="refresh">↻ Muat Ulang</button>' +
+      '</div>' +
+
+      '<div class="adm-message-summary">' +
+        '<div class="adm-message-stat"><small>Total Pesan</small><strong>' +
+          messages.length + '</strong></div>' +
+        '<div class="adm-message-stat"><small>Belum Dibaca</small><strong>' +
+          unread + '</strong></div>' +
+      '</div>' +
+
+      (messages.length
+        ? messages.map(message =>
+          '<article class="adm-message-item">' +
+            '<div class="adm-message-top">' +
+              '<div>' +
+                '<h4 class="adm-message-name">' + esc(message.nama) + '</h4>' +
+                '<div class="adm-message-meta">' +
+                  '<span>✉ ' + esc(message.kontak) + '</span>' +
+                  '<span>◷ ' + esc(new Date(message.created_at).toLocaleString('id-ID')) + '</span>' +
+                '</div>' +
+              '</div>' +
+              '<span class="adm-message-status ' + esc(message.status) + '">' +
+                esc(statusLabel[message.status] || message.status) +
+              '</span>' +
+            '</div>' +
+
+            '<h4 class="adm-message-subject">' + esc(message.subjek) + '</h4>' +
+            '<p class="adm-message-content">' + esc(message.pesan) + '</p>' +
+
+            '<div class="adm-message-actions">' +
+              (message.status !== 'read'
+                ? '<button type="button" data-pesan="read" data-id="' + esc(message.id) + '">✓ Tandai Dibaca</button>'
+                : '') +
+              (message.status !== 'handled'
+                ? '<button type="button" data-pesan="handled" data-id="' + esc(message.id) + '">Tindak Lanjuti</button>'
+                : '') +
+              '<button type="button" data-pesan="delete" data-id="' + esc(message.id) + '">Hapus</button>' +
+            '</div>' +
+          '</article>'
+        ).join('')
+        : '<div class="adm-message-empty"><div style="font-size:2rem">✉️</div><strong>Belum Ada Pesan</strong><p>Pesan dari pengunjung akan muncul di sini.</p></div>'
+      );
+
+  } catch (error) {
+    console.error('Gagal memuat pesan:', error);
+    admBody.querySelector('.adm-messages').innerHTML =
+      '<p class="form-status is-error">' +
+      esc(error.message || 'Gagal memuat pesan.') +
+      '</p>';
+  }
+}
 
   /* -- Jadwal Ibadah -- */
   function admSummary() {
@@ -2850,36 +3291,100 @@
     }).join('');
   }
 
-  function renderAdmJadwalForm() {
+ 
+function renderAdmJadwalForm() {
     const r = scheduleRegistry().filter((x) => x.id === admEditId)[0];
     if (!r) { admEditId = null; renderAdmJadwal(); return; }
-    const dayOpts = dayNames.map((n, i) => '<option value="' + i + '"' + (i === r.ref.day ? ' selected' : '') + '>' + n + '</option>').join('');
+
+    const dayOpts = dayNames.map((n, i) =>
+      '<option value="' + i + '"' +
+      (i === r.ref.day ? ' selected' : '') +
+      '>' + n + '</option>'
+    ).join('');
+
     const sup = currentUser.role === 'superadmin' && r.ref.title !== undefined;
+
+    const photoUrl = (path) => {
+      if (!path) return '';
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      return SUPABASE_URL + '/storage/v1/object/public/schedule-photos/' + encodedPath;
+    };
+
+    const fotoTuanRumah = r.ref.foto_tuan_rumah || '';
+    const fotoPemimpin = r.ref.foto_pemimpin_ibadah || '';
+    const savedInfo = scheduleOverrides[admEditId] || {};
+    const hostName = savedInfo.nama_tuan_rumah || r.ref.host?.name || '';
+    const leaderName = savedInfo.nama_pemimpin_ibadah || r.ref.leader?.name || '';
+    const leaderStatus = savedInfo.status_pemimpin_ibadah || r.ref.leader?.status || '';
+
     admBody.innerHTML =
-      '<button type="button" class="adm-back" data-adm="back">' + icon('chevron-left') + ' Kembali ke daftar</button>' +
+      '<button type="button" class="adm-back" data-adm="back">' +
+        icon('chevron-left') + ' Kembali ke daftar</button>' +
+
       '<h4 class="adm-form-title">' + esc(r.title) + '</h4>' +
       '<p class="adm-form-sub">' + esc(r.catLabel) + '</p>' +
+
       '<form id="admJadwalForm" novalidate>' +
+
         (sup
           ? '<div class="field"><label for="fTitle">Nama kegiatan</label>' +
-              '<input type="text" id="fTitle" maxlength="120" value="' + esc(r.ref.title) + '" required /></div>' +
+              '<input type="text" id="fTitle" maxlength="120" value="' +
+              esc(r.ref.title) + '" required /></div>' +
             '<div class="field"><label for="fNote">Keterangan</label>' +
-              '<textarea id="fNote" rows="3" maxlength="400">' + esc(r.ref.note || '') + '</textarea></div>'
+              '<textarea id="fNote" rows="3" maxlength="400">' +
+              esc(r.ref.note || '') + '</textarea></div>'
           : '') +
+
         '<div class="field"><label for="fPlace">Tempat ibadah</label>' +
-          '<input type="text" id="fPlace" maxlength="120" value="' + esc(r.ref.place) + '" required /></div>' +
+          '<input type="text" id="fPlace" maxlength="120" value="' +
+          esc(r.ref.place) + '" required /></div>' +
+
         '<div class="form-row">' +
-          '<div class="field"><label for="fDay">Hari</label><select id="fDay">' + dayOpts + '</select></div>' +
-          '<div class="field"><label for="fTime">Jam (WIT)</label><input type="time" id="fTime" value="' + esc(r.ref.time) + '" required /></div>' +
+          '<div class="field"><label for="fDay">Hari</label>' +
+            '<select id="fDay">' + dayOpts + '</select></div>' +
+          '<div class="field"><label for="fTime">Jam (WIT)</label>' +
+            '<input type="time" id="fTime" value="' +
+            esc(r.ref.time) + '" required /></div>' +
         '</div>' +
+
+        '<div class="field"><label for="fNamaTuanRumah">Nama Tuan Rumah</label>' +
+          '<input type="text" id="fNamaTuanRumah" maxlength="120" value="' + esc(hostName) + '" required></div>' +
+        '<div class="field"><label for="fNamaPemimpin">Nama Pemimpin Ibadah</label>' +
+          '<input type="text" id="fNamaPemimpin" maxlength="120" value="' + esc(leaderName) + '" required></div>' +
+        '<div class="field"><label for="fStatusPemimpin">Status / Jabatan Pemimpin Ibadah</label>' +
+          '<input type="text" id="fStatusPemimpin" maxlength="120" value="' + esc(leaderStatus) + '"></div>' +
+        '<div class="field">' +
+          '<label for="fFotoTuanRumah">Foto Tuan Rumah</label>' +
+          (fotoTuanRumah
+            ? '<img src="' + esc(photoUrl(fotoTuanRumah)) +
+              '" alt="Foto Tuan Rumah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">'
+            : '<p>Belum ada foto Tuan Rumah.</p>') +
+          '<input type="file" id="fFotoTuanRumah" accept="image/*">' +
+        '</div>' +
+
+        '<div class="field">' +
+          '<label for="fFotoPemimpin">Foto Pemimpin Ibadah</label>' +
+          (fotoPemimpin
+            ? '<img src="' + esc(photoUrl(fotoPemimpin)) +
+              '" alt="Foto Pemimpin Ibadah" style="display:block;max-width:180px;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:10px;">'
+            : '<p>Belum ada foto Pemimpin Ibadah.</p>') +
+          '<input type="file" id="fFotoPemimpin" accept="image/*">' +
+        '</div>' +
+
         '<p class="field-error" id="fErr" role="alert"></p>' +
+
         '<div class="adm-actions">' +
           '<button type="button" class="btn btn-ghost btn-sm" data-adm="back">Batal</button>' +
           '<button type="submit" class="btn btn-navy btn-sm">Simpan</button>' +
         '</div>' +
+
       '</form>';
-    window.setTimeout(() => { const f = $('#fPlace'); if (f) f.focus(); }, 30);
-  }
+
+    window.setTimeout(() => {
+      const f = $('#fPlace');
+      if (f) f.focus();
+    }, 30);
+}
 
 
   /* -- Pengelolaan akun petugas (UI) -- */
@@ -2927,13 +3432,17 @@
   function renderAdmPassword() {
     admBody.innerHTML =
       '<h4 class="adm-form-title">Ubah Kata Sandi</h4>' +
-      '<p class="adm-intro">Ubah kata sandi akun yang sedang digunakan. Email harus sesuai dengan akun login.</p>' +
-      '<p class="adm-warning-note">Form ini belum bisa menjamin keamanan produksi karena proyek frontend ini belum terhubung ke backend autentikasi. Jangan gunakan untuk kata sandi penting sebelum endpoint server tersedia.</p>' +
+      '<p class="adm-intro">Ganti kata sandi akun yang sedang login. Perubahan disimpan langsung di Supabase dan berlaku di semua perangkat.</p>' +
       '<form id="admPasswordForm" novalidate>' +
-        '<div class="field"><label for="pwEmail">Email / identitas login akun</label><input type="text" id="pwEmail" autocomplete="username" value="' + esc(currentUser ? (currentUser.email || currentUser.username) : '') + '" required></div>' +
+        '<h5>Ganti username</h5>' +
+        '<div class="field"><label for="usernameNew">Username baru</label><input type="text" id="usernameNew" minlength="3" maxlength="40" value="' + esc(currentUser ? currentUser.username : '') + '" autocomplete="username" required></div>' +
+        '<div class="field"><label for="usernameCurrentPassword">Password saat ini (konfirmasi perubahan username)</label><input type="password" id="usernameCurrentPassword" autocomplete="current-password" required></div>' +
+        '<button type="button" id="changeUsernameBtn" class="btn btn-navy btn-sm">Simpan Username</button>' +
+        '<hr>' +
+        '<h5>Ganti kata sandi</h5>' +
         '<div class="field"><label for="pwOld">Kata sandi lama</label><input type="password" id="pwOld" autocomplete="current-password" required></div>' +
-        '<div class="field"><label for="pwNew">Kata sandi baru (minimal 12 karakter)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="12" required></div>' +
-        '<div class="field"><label for="pwConfirm">Konfirmasi kata sandi baru</label><input type="password" id="pwConfirm" autocomplete="new-password" minlength="12" required></div>' +
+        '<div class="field"><label for="pwNew">Kata sandi baru (minimal 8 karakter)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" required></div>' +
+        '<div class="field"><label for="pwConfirm">Konfirmasi kata sandi baru</label><input type="password" id="pwConfirm" autocomplete="new-password" minlength="8" required></div>' +
         '<p class="field-error" id="pwErr" role="alert"></p>' +
         '<div class="adm-actions"><button type="submit" class="btn btn-navy btn-sm">Ubah Kata Sandi</button></div>' +
       '</form>';
@@ -3056,8 +3565,9 @@
   }
 
   function imgPrevHtml(v) {
+    const src = v && typeof schedulePhotoPublicUrl === 'function' ? schedulePhotoPublicUrl(v) : v;
     return v
-      ? '<img src="' + esc(imageUrl(v, 300)) + '" alt="Pratinjau foto" onerror="imgFallback(this)" />'
+      ? '<img src="' + esc(imageUrl(src, 300)) + '" alt="Pratinjau foto" onerror="imgFallback(this)" />'
       : '<span>Belum ada foto</span>';
   }
 
@@ -3090,6 +3600,38 @@
 
   /* -- Spesifikasi tab -- */
   // Tab bertipe "form": satu formulir; tab bertipe "list": daftar item (tambah/ubah/hapus)
+  // Sinkronisasi konten Beranda dan Profil dengan Supabase.
+  async function syncSiteContentToServer(contentKey, contentValue) {
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    if (!session || !session.access_token) throw new Error('Sesi Super Admin tidak ditemukan. Silakan login kembali.');
+    const response = await fetch(ADMIN_AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'save_site_content', content_key: contentKey, content_value: contentValue })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success || !result.content_value) throw new Error(result.message || 'Konten gagal disinkronkan ke server.');
+    return result.content_value;
+  }
+
+  async function loadSiteContentFromServer(contentKey) {
+    try {
+      const response = await fetch(ADMIN_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ action: 'get_site_content', content_key: contentKey })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !result.content_value) return;
+      siteStore[contentKey] = result.content_value;
+      lsSet(LS_SITE, siteStore);
+      if (contentKey === 'hero') { applyHero(result.content_value); renderHero(); }
+      else if (contentKey === 'profile') { applyProfile(result.content_value); renderProfile(); }
+    } catch (error) {
+      console.warn('Konten ' + contentKey + ' belum dapat dimuat dari server:', error);
+    }
+  }
+
   function formSpec(cfg) {
     return {
       kind: 'form', intro: cfg.intro,
@@ -3102,6 +3644,17 @@
             if (!saveSite(cfg.store, v)) return STORE_ERR;
             cfg.apply(v);
             cfg.after();
+            if (cfg.store === 'hero' || cfg.store === 'profile') {
+              syncSiteContentToServer(cfg.store, v).then(function (savedValue) {
+                siteStore[cfg.store] = savedValue;
+                lsSet(LS_SITE, siteStore);
+                cfg.apply(savedValue);
+                cfg.after();
+                toast((cfg.store === 'hero' ? 'Beranda' : 'Profil') + ' berhasil disimpan dan tersinkron untuk semua pengunjung.', 'success');
+              }).catch(function (error) {
+                toast(error.message || 'Gagal menyinkronkan konten ke server.', 'error');
+              });
+            }
             return null;
           }
         }];
@@ -3109,9 +3662,117 @@
     };
   }
 
+  // Galeri: metadata disimpan di public.gallery_items dan file foto di Storage bucket foto-jemaat.
+  const GALLERY_BUCKET = 'foto-jemaat';
+  let galleryReady = false;
+
+  function galleryPublicUrl(path) {
+    if (!path) return '';
+    const encoded = String(path).split('/').map(encodeURIComponent).join('/');
+    return SUPABASE_URL + '/storage/v1/object/public/' + GALLERY_BUCKET + '/' + encoded;
+  }
+
+  function galleryHeaders(accessToken) {
+    const h = { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' };
+    if (accessToken) h.Authorization = 'Bearer ' + accessToken;
+    return h;
+  }
+
+  async function uploadGalleryImage(dataUrl, accessToken, oldPath) {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return oldPath || dataUrl;
+    const blob = await (await fetch(dataUrl)).blob();
+    if (!blob.type.startsWith('image/')) throw new Error('Berkas galeri harus berupa gambar.');
+    if (blob.size > 5 * 1024 * 1024) throw new Error('Ukuran foto galeri maksimal 5 MB.');
+    const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = 'galeri/' + Date.now() + '-' + Math.random().toString(36).slice(2, 9) + '.' + ext;
+    const response = await fetch(SUPABASE_URL + '/storage/v1/object/' + GALLERY_BUCKET + '/' + path.split('/').map(encodeURIComponent).join('/'), {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': blob.type, 'x-upsert': 'false' },
+      body: blob
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.message || body.error || 'Foto gagal diunggah ke bucket foto-jemaat. Periksa Storage policy.');
+    }
+    return path;
+  }
+
+  async function syncGalleryChanges(backup, current) {
+    if (!galleryReady) throw new Error('Data galeri dari Supabase belum selesai dimuat. Muat ulang halaman lalu coba lagi.');
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    if (!session || !session.access_token) throw new Error('Sesi admin tidak ditemukan. Silakan login kembali.');
+    const token = session.access_token;
+    const oldById = new Map(backup.map((x) => [String(x.id), x]));
+    const currentIds = new Set(current.map((x) => String(x.id)));
+
+    for (let i = 0; i < current.length; i++) {
+      const item = current[i];
+      const old = oldById.get(String(item.id));
+      const oldPath = old && old.image_path ? old.image_path : (old && old.image && old.image.indexOf(SUPABASE_URL + '/storage/v1/object/public/' + GALLERY_BUCKET + '/') === 0 ? decodeURIComponent(old.image.split('/storage/v1/object/public/' + GALLERY_BUCKET + '/')[1]) : '');
+      const path = await uploadGalleryImage(item.image, token, oldPath);
+      const payload = {
+        title: item.caption || '', description: '', category: item.category || 'ibadah',
+        image_path: path, display_order: i, is_published: true, updated_at: new Date().toISOString()
+      };
+      const isExisting = old && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(item.id));
+      const url = SUPABASE_URL + '/rest/v1/gallery_items' + (isExisting ? '?id=eq.' + encodeURIComponent(item.id) : '');
+      const response = await fetch(url, {
+        method: isExisting ? 'PATCH' : 'POST',
+        headers: Object.assign(galleryHeaders(token), { 'Prefer': 'return=representation' }),
+        body: JSON.stringify(payload)
+      });
+      const rows = await response.json().catch(() => []);
+      if (!response.ok) throw new Error((rows && (rows.message || rows.details)) || 'Metadata galeri gagal disimpan ke tabel gallery_items.');
+      const saved = Array.isArray(rows) ? rows[0] : null;
+      if (saved && saved.id) item.id = saved.id;
+      item.image_path = path;
+      item.image = galleryPublicUrl(path);
+      item.categoryLabel = catLabel(galleryCategories, item.category);
+    }
+
+    for (const old of backup) {
+      if (currentIds.has(String(old.id)) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(old.id))) continue;
+      const response = await fetch(SUPABASE_URL + '/rest/v1/gallery_items?id=eq.' + encodeURIComponent(old.id), {
+        method: 'DELETE', headers: galleryHeaders(token)
+      });
+      if (!response.ok) throw new Error('Foto dihapus dari daftar lokal, tetapi penghapusan pada Supabase gagal. Periksa izin tabel gallery_items.');
+    }
+  }
+
+  async function loadGalleryFromSupabase() {
+    try {
+      const response = await fetch(SUPABASE_URL + '/rest/v1/gallery_items?select=id,title,description,category,image_path,display_order,is_published&is_published=eq.true&order=display_order.asc,created_at.desc', {
+        headers: galleryHeaders(null)
+      });
+      const rows = await response.json().catch(() => []);
+      if (!response.ok) throw new Error((rows && rows.message) || 'Tidak dapat membaca tabel gallery_items.');
+      galleryItems.length = 0;
+      rows.forEach((row) => galleryItems.push({
+        id: row.id, caption: row.title || '', description: row.description || '',
+        category: row.category || 'ibadah', categoryLabel: catLabel(galleryCategories, row.category || 'ibadah'),
+        image_path: row.image_path, image: galleryPublicUrl(row.image_path)
+      }));
+      galleryReady = true;
+      saveSite('gallery', galleryItems);
+      renderGallery();
+    } catch (error) {
+      console.warn('Galeri Supabase belum dapat dimuat:', error);
+      toast('Galeri belum tersambung ke Supabase: ' + (error.message || 'periksa izin tabel dan bucket.'), 'error');
+    }
+  }
+
   function makeListSpec(cfg) {
     const labelOf = (k) => { const f = cfg.fields.filter((x) => x.key === k)[0]; return f ? f.label : k; };
-    function finish(backup) {
+    async function finish(backup) {
+      if (cfg.store === 'gallery') {
+        try { await syncGalleryChanges(backup, cfg.arr); }
+        catch (error) {
+          cfg.arr.length = 0;
+          backup.forEach((x) => cfg.arr.push(x));
+          saveSite(cfg.store, cfg.arr);
+          return error.message || 'Galeri gagal disinkronkan ke Supabase.';
+        }
+      }
       if (!saveSite(cfg.store, cfg.arr)) {
         cfg.arr.length = 0;
         backup.forEach((x) => cfg.arr.push(x));
@@ -3355,11 +4016,64 @@
     after: function () { renderAnnouncements(); renderTopbar(); }
   });
 
+  // Sinkronisasi Struktur Kepengurusan dengan Supabase.
+  async function syncStrukturToServer() {
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    if (!session || !session.access_token) {
+      throw new Error('Sesi Super Admin tidak ditemukan. Silakan login kembali.');
+    }
+    const response = await fetch(ADMIN_AUTH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ action: 'save_struktur', struktur: strukturData })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Struktur gagal disinkronkan ke server.');
+    }
+  }
+
+  async function loadStrukturFromServer() {
+    try {
+      const response = await fetch(ADMIN_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({ action: 'get_struktur' })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !result.struktur) return;
+      if (!Array.isArray(result.struktur.seksi) ||
+          !Array.isArray(result.struktur.pilauNila) ||
+          !result.struktur.ketua) return;
+      Object.assign(strukturData, result.struktur);
+      siteStore.struktur = result.struktur;
+      lsSet(LS_SITE, siteStore);
+      renderStruktur();
+    } catch (error) {
+      console.warn('Struktur Kepengurusan belum dapat dimuat dari server:', error);
+    }
+  }
+
   // Struktur kepengurusan
   function strukturPersist(mutator) {
     const snap = JSON.stringify(strukturData);
     mutator();
-    if (saveSite('struktur', strukturData)) { renderStruktur(); return null; }
+    if (saveSite('struktur', strukturData)) {
+      renderStruktur();
+      syncStrukturToServer().then(() => {
+        toast('Struktur Kepengurusan tersimpan dan tersinkron ke semua pengunjung.', 'success');
+      }).catch((error) => {
+        toast(error.message || 'Gagal menyinkronkan Struktur Kepengurusan.', 'error');
+      });
+      return null;
+    }
     const old = JSON.parse(snap);
     Object.keys(strukturData).forEach((k) => { delete strukturData[k]; });
     Object.assign(strukturData, old);
@@ -3469,24 +4183,51 @@
         ];
         if (r.kind === 'kel') fields.push({ key: 'tanggal', label: 'Tanggal / minggu ibadah', type: 'text', max: 160 });
         const ref = r.ref;
+        const saved = scheduleOverrides[r.id] || {};
         const vals = {
-          hostPhoto: ref.host.photo || '', hostName: ref.host.name,
-          leaderPhoto: ref.leader.photo || '', leaderName: ref.leader.name, leaderStatus: ref.leader.status
+          hostPhoto: saved.foto_tuan_rumah || ref.foto_tuan_rumah || ref.host.photo || '',
+          hostName: saved.nama_tuan_rumah || ref.host.name,
+          leaderPhoto: saved.foto_pemimpin_ibadah || ref.foto_pemimpin_ibadah || ref.leader.photo || '',
+          leaderName: saved.nama_pemimpin_ibadah || ref.leader.name,
+          leaderStatus: saved.status_pemimpin_ibadah || ref.leader.status
         };
         if (r.kind === 'kel') vals.tanggal = ref.tanggal;
         return {
           id: r.id, group: r.group, title: r.title, sub: 'Tuan rumah: ' + ref.host.name + ' • Pemimpin: ' + ref.leader.name,
           fields: fields, vals: vals,
-          save: function (v) {
+          save: async function (v) {
             if (!v.hostName.trim() || !v.leaderName.trim()) return 'Nama tuan rumah dan pemimpin ibadah wajib diisi.';
-            const map = Object.assign({}, siteStore.sektor || {});
-            map[r.id] = {
-              hostName: v.hostName.trim(), hostPhoto: v.hostPhoto,
-              leaderName: v.leaderName.trim(), leaderStatus: v.leaderStatus.trim(), leaderPhoto: v.leaderPhoto
+            const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+            if (!session || !session.access_token) return 'Sesi login berakhir. Silakan login kembali.';
+            const previous = scheduleOverrides[r.id] || {};
+            const hostPhoto = await uploadScheduleDataUrl(v.hostPhoto || '', r.id, 'tuan-rumah', session.access_token);
+            const leaderPhoto = await uploadScheduleDataUrl(v.leaderPhoto || '', r.id, 'pemimpin-ibadah', session.access_token);
+            const payload = {
+              action: 'save_schedule', id: r.id, place: ref.place, day: ref.day, time: ref.time,
+              week: weekKey(new Date()),
+              foto_tuan_rumah: hostPhoto || null, foto_pemimpin_ibadah: leaderPhoto || null,
+              nama_tuan_rumah: v.hostName.trim(), nama_pemimpin_ibadah: v.leaderName.trim(),
+              status_pemimpin_ibadah: (v.leaderStatus || '').trim()
             };
-            if (r.kind === 'kel') map[r.id].tanggal = (v.tanggal || '').trim();
-            if (!saveSite('sektor', map)) return STORE_ERR;
-            applySektorOne(ref, r.kind, map[r.id]);
+            const response = await fetch(ADMIN_AUTH_URL, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + session.access_token },
+              body: JSON.stringify(payload)
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) return result.message || 'Gagal menyimpan data Sektor/Unit/Binakel ke Supabase.';
+            scheduleOverrides[r.id] = Object.assign({}, previous, {
+              place: ref.place, day: ref.day, time: ref.time, week: payload.week,
+              foto_tuan_rumah: hostPhoto, foto_pemimpin_ibadah: leaderPhoto,
+              nama_tuan_rumah: payload.nama_tuan_rumah, nama_pemimpin_ibadah: payload.nama_pemimpin_ibadah,
+              status_pemimpin_ibadah: payload.status_pemimpin_ibadah, by: currentUser.username, at: new Date().toISOString()
+            });
+            if (r.kind === 'kel') {
+              const map = Object.assign({}, siteStore.sektor || {});
+              map[r.id] = Object.assign({}, map[r.id] || {}, { tanggal: (v.tanggal || '').trim() });
+              saveSite('sektor', map);
+              ref.tanggal = (v.tanggal || '').trim();
+            }
+            applyScheduleOverrides();
             renderSchedules();
             return null;
           }
@@ -3668,6 +4409,91 @@
       if (box) setImgValue(box, e.target.value.trim());
     }
   });
+    /* -- Aksi tombol Kontak & Pesan -- */
+  admBody.addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-pesan]');
+    if (!t) return;
+
+    if (!currentUser || currentUser.role !== 'superadmin') {
+      toast('Hanya Super Admin yang dapat mengelola pesan.', 'error');
+      return;
+    }
+
+    const action = t.getAttribute('data-pesan');
+    const id = t.getAttribute('data-id');
+
+    if (action === 'refresh') {
+      renderAdmPesan();
+      return;
+    }
+
+    if (action === 'delete' &&
+        !window.confirm('Hapus pesan ini secara permanen?')) {
+      return;
+    }
+
+    const session = JSON.parse(
+      sessionStorage.getItem(SS_SESSION) || 'null'
+    );
+
+    if (!session?.access_token) {
+      toast('Sesi login tidak ditemukan. Silakan masuk kembali.', 'error');
+      return;
+    }
+
+    let body;
+
+    if (action === 'read' || action === 'handled') {
+      body = {
+        action: 'update_contact_message',
+        id: id,
+        status: action
+      };
+    } else if (action === 'delete') {
+      body = {
+        action: 'delete_contact_message',
+        id: id
+      };
+    } else {
+      return;
+    }
+
+    t.disabled = true;
+
+    try {
+      const response = await fetch(
+        SUPABASE_URL + '/functions/v1/admin-auth',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': 'Bearer ' + session.access_token
+          },
+          body: JSON.stringify(body)
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Aksi gagal dilakukan.');
+      }
+
+      toast(
+        action === 'delete'
+          ? 'Pesan berhasil dihapus.'
+          : 'Status pesan berhasil diperbarui.',
+        'success'
+      );
+
+      renderAdmPesan();
+
+    } catch (error) {
+      toast(error.message || 'Terjadi kesalahan.', 'error');
+      t.disabled = false;
+    }
+  });
 
   admBody.addEventListener('change', (e) => {
     const t = e.target;
@@ -3688,61 +4514,240 @@
     }
   });
 
-  admBody.addEventListener('submit', (e) => {
+  admBody.addEventListener('click', async (e) => {
+    const button = e.target.closest('#changeUsernameBtn');
+    if (!button) return;
+    const err = $('#pwErr');
+    const newUsername = ($('#usernameNew')?.value || '').trim();
+    const currentPassword = $('#usernameCurrentPassword')?.value || '';
+    const savedSession = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    if (!currentUser || !savedSession?.access_token) { err.textContent = 'Sesi login tidak ditemukan. Silakan login kembali.'; return; }
+    if (!/^[a-zA-Z0-9_.-]{3,40}$/.test(newUsername)) { err.textContent = 'Username harus 3–40 karakter dan hanya boleh berisi huruf, angka, titik, garis bawah, atau tanda hubung.'; return; }
+    if (!currentPassword) { err.textContent = 'Masukkan password saat ini untuk konfirmasi.'; return; }
+    button.disabled = true; button.textContent = 'Menyimpan…'; err.textContent = '';
+    try {
+      const response = await fetch(ADMIN_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + savedSession.access_token },
+        body: JSON.stringify({ action: 'change_username', currentPassword, newUsername })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Gagal mengubah username.');
+      currentUser.username = result.user.username;
+      savedSession.user = currentUser;
+      sessionStorage.setItem(SS_SESSION, JSON.stringify(savedSession));
+      $('#usernameCurrentPassword').value = '';
+      toast('Username berhasil diperbarui di Supabase.', 'success');
+      renderAdmPassword();
+    } catch (error) {
+      err.textContent = error.message || 'Tidak dapat menghubungi server.';
+    } finally {
+      const activeButton = $('#changeUsernameBtn');
+      if (activeButton) { activeButton.disabled = false; activeButton.textContent = 'Simpan Username'; }
+    }
+  });
+
+  admBody.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (e.target.id === 'admPasswordForm') {
+      const form = e.target;
       const err = $('#pwErr');
-      const email = $('#pwEmail').value.trim().toLowerCase();
       const oldPass = $('#pwOld').value;
       const newPass = $('#pwNew').value;
       const confirmPass = $('#pwConfirm').value;
-      if (!currentUser) { err.textContent = 'Sesi login tidak ditemukan.'; return; }
-      if (!email || email !== String(currentUser.email || currentUser.username || '').toLowerCase()) {
-        err.textContent = 'Email harus sesuai dengan akun yang sedang login.'; return;
+      const savedSession = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+      if (!currentUser || !savedSession || !savedSession.access_token) {
+        err.textContent = 'Sesi login tidak ditemukan. Silakan login kembali.'; return;
       }
-      if (sha256(AUTH_PREFIX + currentUser.username + ':' + oldPass) !== currentUser.hash) {
-        err.textContent = 'Kata sandi lama tidak sesuai.'; return;
-      }
-      if (newPass.length < 12) { err.textContent = 'Kata sandi baru minimal 12 karakter.'; return; }
+      if (newPass.length < 8) { err.textContent = 'Kata sandi baru minimal 8 karakter.'; return; }
       if (newPass !== confirmPass) { err.textContent = 'Konfirmasi kata sandi tidak sama.'; return; }
-      err.textContent = 'Perubahan kata sandi lokal tidak diaktifkan demi keamanan. Hubungkan backend autentikasi untuk menyimpan hash aman.';
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Menyimpan…'; }
+      err.textContent = '';
+      fetch(ADMIN_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': 'Bearer ' + savedSession.access_token
+        },
+        body: JSON.stringify({ action: 'change_password', currentPassword: oldPass, newPassword: newPass })
+      }).then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.message || 'Gagal mengubah kata sandi.');
+        form.reset();
+        toast('Kata sandi berhasil diubah secara permanen.', 'success');
+        err.textContent = result.message || 'Kata sandi berhasil diubah.';
+      }).catch((error) => {
+        err.textContent = error.message || 'Tidak dapat menghubungi server.';
+      }).finally(() => {
+        if (submit) { submit.disabled = false; submit.textContent = 'Ubah Kata Sandi'; }
+      });
       return;
     }
 
-    if (e.target.id === 'admJadwalForm') {
-      if (!can('jadwal') || !admEditId) return;
-      const r = scheduleRegistry().filter((x) => x.id === admEditId)[0];
-      const place = $('#fPlace').value.trim();
-      const day = parseInt($('#fDay').value, 10);
-      const time = $('#fTime').value;
-      const err = $('#fErr');
-      if (place.length < 3) { err.textContent = 'Tempat ibadah minimal 3 karakter.'; return; }
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { err.textContent = 'Jam tidak valid.'; return; }
-      if (!(day >= 0 && day <= 6)) { err.textContent = 'Hari tidak valid.'; return; }
-      const prev = scheduleOverrides[admEditId];
-      const entry = { place: place, day: day, time: time, week: weekKey(new Date()), by: currentUser.username, at: new Date().toISOString() };
-      if (prev) { if (prev.title) entry.title = prev.title; if (prev.note) entry.note = prev.note; }
-      const titleEl = $('#fTitle');
-      if (titleEl && currentUser.role === 'superadmin') {
-        const title = titleEl.value.trim();
-        if (title.length < 3) { err.textContent = 'Nama kegiatan minimal 3 karakter.'; return; }
-        entry.title = title;
-        entry.note = $('#fNote').value.trim();
-      }
-      scheduleOverrides[admEditId] = entry;
-      if (!lsSet(LS_JADWAL, scheduleOverrides)) {
-        if (prev) scheduleOverrides[admEditId] = prev; else delete scheduleOverrides[admEditId];
-        err.textContent = 'Gagal menyimpan. Penyimpanan browser tidak tersedia.';
-        return;
-      }
-      applyScheduleOverrides();
-      admEditId = null;
-      renderAdmBody();
-      renderSchedules();
-      toast('Jadwal berhasil disimpan.', 'success');
+    
+if (e.target.id === 'admJadwalForm') {
+  if (!can('jadwal') || !admEditId) return;
+
+  const r = scheduleRegistry().filter((x) => x.id === admEditId)[0];
+  const place = $('#fPlace').value.trim();
+  const day = parseInt($('#fDay').value, 10);
+  const time = $('#fTime').value;
+  const namaTuanRumah = $('#fNamaTuanRumah')?.value.trim() || '';
+  const namaPemimpin = $('#fNamaPemimpin')?.value.trim() || '';
+  const statusPemimpin = $('#fStatusPemimpin')?.value.trim() || '';
+  const err = $('#fErr');
+
+  const fotoTuanRumahFile = $('#fFotoTuanRumah')?.files?.[0] || null;
+  const fotoPemimpinFile = $('#fFotoPemimpin')?.files?.[0] || null;
+
+  if (place.length < 3) {
+    err.textContent = 'Tempat ibadah minimal 3 karakter.';
+    return;
+  }
+  if (!namaTuanRumah || !namaPemimpin) {
+    err.textContent = 'Nama Tuan Rumah dan Pemimpin Ibadah wajib diisi.';
+    return;
+  }
+
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    err.textContent = 'Jam tidak valid.';
+    return;
+  }
+
+  if (!(day >= 0 && day <= 6)) {
+    err.textContent = 'Hari tidak valid.';
+    return;
+  }
+
+  const prev = scheduleOverrides[admEditId];
+
+  const entry = {
+    place: place,
+    day: day,
+    time: time,
+    week: weekKey(new Date()),
+    by: currentUser.username,
+    at: new Date().toISOString(),
+    foto_tuan_rumah: prev?.foto_tuan_rumah || r?.ref?.foto_tuan_rumah || null,
+    foto_pemimpin_ibadah: prev?.foto_pemimpin_ibadah || r?.ref?.foto_pemimpin_ibadah || null,
+    nama_tuan_rumah: namaTuanRumah, nama_pemimpin_ibadah: namaPemimpin, status_pemimpin_ibadah: statusPemimpin
+  };
+
+  if (prev) {
+    if (prev.title) entry.title = prev.title;
+    if (prev.note) entry.note = prev.note;
+  }
+
+  const titleEl = $('#fTitle');
+
+  if (titleEl && currentUser.role === 'superadmin') {
+    const title = titleEl.value.trim();
+
+    if (title.length < 3) {
+      err.textContent = 'Nama kegiatan minimal 3 karakter.';
       return;
     }
+
+    entry.title = title;
+    entry.note = $('#fNote').value.trim();
+  }
+
+  const scheduleSession = JSON.parse(
+    sessionStorage.getItem(SS_SESSION) || 'null'
+  );
+
+  if (!scheduleSession || !scheduleSession.access_token) {
+    err.textContent = 'Sesi login berakhir. Silakan login kembali.';
+    return;
+  }
+
+  const submit = e.target.querySelector('button[type="submit"]');
+
+  try {
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = 'Menyimpan...';
+    }
+
+    err.textContent = '';
+
+    // Upload foto Tuan Rumah jika ada foto baru.
+    if (fotoTuanRumahFile) {
+      entry.foto_tuan_rumah = await uploadSchedulePhoto(
+        fotoTuanRumahFile,
+        admEditId,
+        'tuan-rumah',
+        scheduleSession.access_token
+      );
+    }
+
+    // Upload foto Pemimpin Ibadah jika ada foto baru.
+    if (fotoPemimpinFile) {
+      entry.foto_pemimpin_ibadah = await uploadSchedulePhoto(
+        fotoPemimpinFile,
+        admEditId,
+        'pemimpin-ibadah',
+        scheduleSession.access_token
+      );
+    }
+
+    // Simpan jadwal dan lokasi foto ke database.
+    const response = await fetch(ADMIN_AUTH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + scheduleSession.access_token
+      },
+      body: JSON.stringify({
+        action: 'save_schedule',
+        id: admEditId,
+        place: place,
+        day: day,
+        time: time,
+        week: entry.week,
+        foto_tuan_rumah: entry.foto_tuan_rumah,
+        foto_pemimpin_ibadah: entry.foto_pemimpin_ibadah,
+        nama_tuan_rumah: entry.nama_tuan_rumah,
+        nama_pemimpin_ibadah: entry.nama_pemimpin_ibadah,
+        status_pemimpin_ibadah: entry.status_pemimpin_ibadah,
+        ...(currentUser.role === 'superadmin' ? {
+          title: entry.title,
+          note: entry.note
+        } : {})
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Jadwal gagal disimpan.');
+    }
+
+    scheduleOverrides[admEditId] = entry;
+    applyScheduleOverrides();
+
+    admEditId = null;
+    renderAdmBody();
+    renderSchedules();
+
+    toast('Jadwal dan foto berhasil disimpan ke Supabase.', 'success');
+    return;
+
+  } catch (error) {
+    err.textContent = error.message || 'Gagal menyimpan jadwal dan foto.';
+    return;
+
+  } finally {
+    if (submit) {
+      submit.disabled = false;
+      submit.textContent = 'Simpan';
+    }
+  }
+  }
 
     if (e.target.id === 'admKolForm') {
       if (!can('kolektan')) return;
@@ -3788,8 +4793,12 @@
       const entry = admEdit.isNew ? spec.blank() : spec.entries().filter((x) => x.id === admEdit.id)[0];
       const errEl = $('#sErr');
       if (!entry) { admEdit = null; renderAdmBody(); return; }
-      const err = entry.save(readForm(e.target, entry.fields));
-      if (err) { errEl.textContent = err; return; }
+      const submit = e.target.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Menyimpan...'; }
+      let err;
+      try { err = await entry.save(readForm(e.target, entry.fields)); }
+      catch (saveError) { err = saveError.message || 'Gagal menyimpan data.'; }
+      if (err) { errEl.textContent = err; if (submit) { submit.disabled = false; submit.textContent = 'Simpan'; } return; }
       toast('Perubahan berhasil disimpan.', 'success');
       if (spec.kind !== 'form') admEdit = null;
       renderAdmBody();
@@ -3804,13 +4813,14 @@
   renderHero();
   renderProfile();
   renderScheduleFilters();
-  renderSchedules();
+  loadScheduleFromSupabase();
   renderMinistries();
   renderNewsFilters();
   renderNews();
   renderDevotion();
   renderGalleryFilters();
   renderGallery();
+  loadGalleryFromSupabase();
   renderAnnouncements();
   renderTopbar();
   renderLocation();
@@ -3819,6 +4829,9 @@
   renderKolektan();
   renderSektor();
   renderStruktur();
+  loadStrukturFromServer();
+  loadSiteContentFromServer('hero');
+  loadSiteContentFromServer('profile');
   onScroll();
 
   window.setInterval(renderSchedules, 5 * 60 * 1000);
