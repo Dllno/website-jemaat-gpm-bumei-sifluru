@@ -3572,7 +3572,15 @@ function renderAdmJadwalForm() {
       if (admTab === 'kolektan' && can('kolektan')) renderAdmKolektan();
     } catch (error) {
       console.error('Kolektan Supabase:', error);
-      // Jangan menghapus data lokal jika jaringan/database belum siap.
+      // Halaman publik tidak boleh terus menampilkan cache yang mungkin sudah dihapus
+      // di server. Jika fetch gagal, kosongkan cache publik agar tidak menampilkan data basi.
+      const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+      if (!(session && session.access_token)) {
+        kolektanData.length = 0;
+        lsSet(LS_KOLEKTAN, []);
+        renderKolektan();
+      }
+      // Pada sesi admin, cache tetap dipertahankan agar data lama tidak hilang saat gangguan.
     }
   }
 
