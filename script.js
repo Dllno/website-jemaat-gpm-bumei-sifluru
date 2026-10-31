@@ -3006,6 +3006,7 @@ function applyScheduleOverrides() {
       currentUser = user;
       admTab = null;
       sessionStorage.setItem(SS_SESSION, JSON.stringify({ user, access_token: result.access_token, refresh_token: result.refresh_token }));
+      loadKolektanFromSupabase();
       loginForm.reset();
       updateLoginUi();
       closeOverlay(loginOverlay);
@@ -3490,13 +3491,13 @@ function renderAdmJadwalForm() {
           '<div class="field"><label for="kAmt">Jumlah kolektan (Rp)</label>' +
             '<input type="text" id="kAmt" inputmode="numeric" autocomplete="off" placeholder="contoh: 1500000" value="' + (editing ? editing.total : '') + '" required /></div>' +
         '</div>' +
-        '<div class="field"><label for="kPhoto">Foto bukti (JPG, PNG, atau WebP; maks. 5 MB)</label><input type="file" id="kPhoto" accept="image/jpeg,image/png,image/webp" /><small class="adm-hint">Foto pratinjau. Untuk penyimpanan permanen dan akses lintas perangkat, backend/storage server masih harus dikonfigurasi.</small></div>' +
+        '<div class="field"><label for="kPhoto">Foto bukti (JPG, PNG, atau WebP; maks. 5 MB)</label><input type="file" id="kPhoto" accept="image/jpeg,image/png,image/webp" /><small class="adm-hint">Foto akan diunggah ke Supabase Storage agar dapat dilihat dari perangkat lain.</small></div>' +
         '<img id="kPhotoPreview" class="adm-kol-photo-preview" alt="Pratinjau foto bukti kolektan" ' + (editing && editing.photo ? 'src="' + esc(editing.photo) + '"' : 'hidden') + '>' +
         '<button type="button" class="btn btn-ghost btn-sm" id="kPhotoClear">Hapus foto dari catatan</button>' +
         '<div class="field"><label for="kNote">Keterangan (opsional)</label><textarea id="kNote" rows="2" maxlength="500">' + esc(editing ? editing.note || '' : '') + '</textarea></div>' +
         '<p class="adm-terbilang" id="kWords">' + (editing ? esc(terbilang(editing.total)) : 'Terbilang akan tampil otomatis.') + '</p>' +
-        '<p class="adm-warning-note">Data dan foto saat ini disimpan di browser lokal, bukan database server. Jangan anggap data sudah tersinkron atau aman untuk produksi.</p>' +
-        '<p class="field-error" id="kErr" role="alert"></p>'
+        '<p class="adm-hint">Data kolekta dan foto bukti disimpan ke Supabase agar dapat diakses lintas perangkat.</p>' +
+        '<p class="field-error" id="kErr" role="alert"></p>' +
         '<div class="adm-actions">' +
           (editing ? '<button type="button" class="btn btn-ghost btn-sm" data-adm="back">Batal</button>' : '') +
           '<button type="submit" class="btn btn-navy btn-sm">' + (editing ? 'Simpan perubahan' : 'Simpan') + '</button>' +
@@ -3517,9 +3518,65 @@ function renderAdmJadwalForm() {
         : '<p class="adm-empty">Belum ada data kolektan.</p>');
   }
 
-  function saveKolektan() {
-    sortKolektan();
-    return lsSet(LS_KOLEKTAN, kolektanData);
+  async function kolektanRequest(action, payload) {
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY };
+    if (session && session.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+    const response = await fetch(ADMIN_AUTH_URL, {
+      method: 'POST', headers,
+      body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.message || 'Permintaan Kolektan ke Supabase gagal.');
+    return result;
+  }
+
+  async function loadKolektanFromSupabase() {
+    try {
+      const result = await kolektanRequest('get_kolektan');
+      const rows = Array.isArray(result.records) ? result.records : [];
+      // Migrasi otomatis data lokal lama hanya jika tabel server masih kosong dan sesi admin tersedia.
+      const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+      if (!rows.length && kolektanData.length && !(session && session.access_token)) {
+        renderKolektan();
+        return; // Pertahankan data lokal lama sampai admin login dan migrasi bisa dijalankan.
+      }
+      if (!rows.length && kolektanData.length && session && session.access_token) {
+        for (const item of kolektanData.slice()) {
+          await kolektanRequest('save_kolektan', { record: {
+            date: item.date, total: Number(item.total), words: item.words || terbilang(item.total),
+            photo: item.photo || '', note: item.note || '', status: item.status || 'Dokumentasi',
+            updatedBy: item.updatedBy || (currentUser && currentUser.name) || 'petugas', updatedAt: item.updatedAt || new Date().toISOString()
+          }});
+        }
+        const migrated = await kolektanRequest('get_kolektan');
+        rows.push(...(Array.isArray(migrated.records) ? migrated.records : []));
+      }
+      kolektanData.length = 0;
+      rows.forEach((r) => {
+        const date = String(r.date || r.collection_date || '');
+        const total = Number(r.total);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(total) || total <= 0) return;
+        kolektanData.push({
+          id: r.id || ('kol-' + date), date, total, words: r.words || terbilang(total),
+          photo: typeof r.photo === 'string' ? r.photo : (r.photo_url || ''),
+          note: typeof r.note === 'string' ? r.note : '', status: r.status || 'Dokumentasi',
+          updatedBy: r.updated_by || r.updatedBy || '', updatedAt: r.updated_at || r.updatedAt || ''
+        });
+      });
+      sortKolektan();
+      lsSet(LS_KOLEKTAN, kolektanData);
+      renderKolektan();
+      if (admTab === 'kolektan' && can('kolektan')) renderAdmKolektan();
+    } catch (error) {
+      console.error('Kolektan Supabase:', error);
+      // Jangan menghapus data lokal jika jaringan/database belum siap.
+    }
+  }
+
+  async function saveKolektan(record) {
+    const result = await kolektanRequest('save_kolektan', { record });
+    return result.record;
   }
 
   /* ==========================================================
@@ -4361,7 +4418,7 @@ function renderAdmJadwalForm() {
   }
 
   /* -- Interaksi panel -- */
-  admBody.addEventListener('click', (e) => {
+  admBody.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-adm]');
     if (!t) return;
     const act = t.getAttribute('data-adm');
@@ -4393,19 +4450,16 @@ function renderAdmJadwalForm() {
     else if (act === 'edit-kol' && can('kolektan')) { admEditKol = id; renderAdmBody(); }
     else if (act === 'del-kol' && can('kolektan')) {
       if (!window.confirm('Hapus data kolekta tanggal ' + formatDateID(id) + '?')) return;
-      const backup = kolektanData.slice();
-      const idx = kolektanData.findIndex((k) => k.date === id);
-      if (idx === -1) return;
-      kolektanData.splice(idx, 1);
-      if (!saveKolektan()) {
-        kolektanData.length = 0; backup.forEach((k) => kolektanData.push(k));
-        toast('Gagal menyimpan. Penyimpanan browser tidak tersedia.', 'error');
-        return;
-      }
-      admEditKol = null;
-      renderKolektan();
-      renderAdmBody();
-      toast('Data kolekta dihapus.', 'success');
+      try {
+        await kolektanRequest('delete_kolektan', { date: id });
+        const idx = kolektanData.findIndex((k) => k.date === id);
+        if (idx !== -1) kolektanData.splice(idx, 1);
+        lsSet(LS_KOLEKTAN, kolektanData);
+        admEditKol = null;
+        renderKolektan();
+        renderAdmBody();
+        toast('Data kolekta dihapus dari Supabase.', 'success');
+      } catch (error) { toast(error.message || 'Data kolekta gagal dihapus.', 'error'); }
     }
     else if (act === 'site-add' && spec && can(admTab) && spec.blank) { admEdit = { id: 'new', isNew: true }; renderAdmBody(); }
     else if (act === 'site-edit' && spec && can(admTab)) { admEdit = { id: id }; renderAdmBody(); }
@@ -4431,7 +4485,7 @@ function renderAdmJadwalForm() {
     }
   });
 
-  admBody.addEventListener('click', (e) => {
+  admBody.addEventListener('click', async (e) => {
     if (e.target && e.target.id === 'kPhotoClear') {
       const preview = $('#kPhotoPreview');
       const input = $('#kPhoto');
@@ -4826,33 +4880,42 @@ if (e.target.id === 'admJadwalForm') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = 'Tanggal wajib diisi.'; return; }
       const total = digits ? parseInt(digits, 10) : 0;
       if (!(total > 0)) { err.textContent = 'Jumlah kolekta harus lebih dari 0.'; return; }
-      const backup = kolektanData.slice();
       const wasEditing = !!admEditKol;
       const oldRecord = admEditKol ? kolektanData.find((k) => k.date === admEditKol) : null;
       const photoPreview = $('#kPhotoPreview');
-      const photo = photoPreview && !photoPreview.hidden ? photoPreview.src : '';
+      let photo = photoPreview && !photoPreview.hidden ? photoPreview.src : '';
       const note = $('#kNote').value.trim();
-      if (admEditKol) {
-        const i0 = kolektanData.findIndex((k) => k.date === admEditKol);
-        if (i0 !== -1) kolektanData.splice(i0, 1);
+      const fileInput = $('#kPhoto');
+      const clearPhoto = !photoPreview || photoPreview.hidden;
+      const submit = e.target.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.textContent = 'Menyimpan...'; }
+      try {
+        // Foto data-URL dikirim ke Edge Function; backend mengunggahnya ke bucket kolektan-photos.
+        if (clearPhoto) photo = '';
+        const saved = await saveKolektan({
+          date, total, words: terbilang(total), photo,
+          note, status: 'Dokumentasi', updatedBy: currentUser ? currentUser.name : 'petugas',
+          updatedAt: new Date().toISOString()
+        });
+        if (admEditKol && admEditKol !== date) {
+          await kolektanRequest('delete_kolektan', { date: admEditKol });
+        }
+        const normalized = saved || { date, total, words: terbilang(total), photo, note, status: 'Dokumentasi', updatedBy: currentUser ? currentUser.name : 'petugas', updatedAt: new Date().toISOString() };
+        const i = kolektanData.findIndex((k) => k.date === date);
+        const item = { id: normalized.id || ('kol-' + date), date, total: Number(normalized.total || total), words: normalized.words || terbilang(total), photo: normalized.photo || normalized.photo_url || '', note: normalized.note || '', status: normalized.status || 'Dokumentasi', updatedBy: normalized.updated_by || normalized.updatedBy || (currentUser ? currentUser.name : 'petugas'), updatedAt: normalized.updated_at || normalized.updatedAt || new Date().toISOString() };
+        if (i !== -1) kolektanData.splice(i, 1);
+        kolektanData.push(item);
+        sortKolektan();
+        lsSet(LS_KOLEKTAN, kolektanData);
+        admEditKol = null;
+        renderKolektan();
+        renderAdmBody();
+        toast(wasEditing ? 'Data kolekta diperbarui di Supabase.' : 'Data kolekta disimpan ke Supabase.', 'success');
+      } catch (error) {
+        err.textContent = error.message || 'Gagal menyimpan data Kolektan ke Supabase.';
+      } finally {
+        if (submit) { submit.disabled = false; submit.textContent = wasEditing ? 'Simpan perubahan' : 'Simpan'; }
       }
-      const i1 = kolektanData.findIndex((k) => k.date === date);
-      if (i1 !== -1) kolektanData.splice(i1, 1);
-      kolektanData.push({
-        id: oldRecord && oldRecord.id ? oldRecord.id : ('kol-' + date),
-        date: date, total: total, words: terbilang(total), photo: photo,
-        note: note, status: 'Dokumentasi', updatedBy: currentUser ? currentUser.name : 'petugas',
-        updatedAt: new Date().toISOString()
-      });
-      if (!saveKolektan()) {
-        kolektanData.length = 0; backup.forEach((k) => kolektanData.push(k));
-        err.textContent = 'Gagal menyimpan. Penyimpanan browser tidak tersedia.';
-        return;
-      }
-      admEditKol = null;
-      renderKolektan();
-      renderAdmBody();
-      toast(wasEditing ? 'Data kolekta diperbarui.' : 'Data kolekta disimpan.', 'success');
       return;
     }
 
@@ -4896,6 +4959,7 @@ if (e.target.id === 'admJadwalForm') {
   renderContact();
   renderSumbangan();
   renderKolektan();
+  loadKolektanFromSupabase();
   renderSektor();
   renderStruktur();
   loadStrukturFromServer();
