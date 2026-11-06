@@ -2045,39 +2045,40 @@ form.addEventListener('submit', async (e) => {
     // Logo resmi GPM: simpan file di 'gambar/logo-gpm.jpeg' (ubah path jika berbeda), atau unggah lewat panel admin.
     logo: 'gambar/logo-gpm.jpeg',
     ketua:      { role: 'Ketua Majelis Jemaat',       name: 'Pdt. Y. Y. Tahalele, S.Th', photo: 'gambar/ketua.jpg' },
-    wakil:      { role: 'Wakil Ketua Majelis Jemaat', name: 'Pnt. Raristam L. Latuinury/K', photo: '' },
-    sekretaris: { role: 'Sekretaris',        name: 'Pnt. Tamahum - Latuinury', photo: '' },
-    wSekretaris:{ role: 'Wakil Sekretaris',  name: 'Pnt. Johana Soplanty/M', photo: '' },
-    bendahara:  { role: 'Bendahara',         name: 'Pnt. Oeboray R. Kobunwair', photo: '' },
-    wBendahara: { role: 'Wakil Bendahara',   name: 'Dkn. M. L. Tufail', photo: '' },
-    anggota:    { role: 'Anggota',           name: 'Pdt. N. Arena Hukom, S.Si', photo: '' },
+    wakil:      { role: 'Wakil Ketua Majelis Jemaat', name: 'Pnt. Rarkoma Lakotany /K', photo: '' },
+    sekretaris: { role: 'Sekretaris',        name: 'Pnt. Yonathan Y. Leunura', photo: '' },
+    wSekretaris:{ role: 'Wakil Sekretaris',  name: 'Pnt. Johana Soplatu/M', photo: '' },
+    bendahara:  { role: 'Bendahara',         name: 'Pnt. Debora Koknusa/T', photo: '' },
+    wBendahara: { role: 'Wakil Bendahara',   name: 'Dkn. Abedsina Mehmorlay/L', photo: '' },
+    anggota:    { role: 'Anggota',           name: 'Pdt. Ny. Anna Hukom, S.Si', photo: '' },
     seksi: [
-      { role: 'Ketua Seksi PTPU', name: 'Pnt. Willem Makattita', photo: '', members: [
-        { name: 'Pnt. Helena Lakotamy/K', photo: '', tasks: ['Pendataan Anak Jemaat','Pembinaan Warga Gereja','Pengajaran'] },
-        { name: 'Dkn. Marfit Lakotamy/L', photo: '', tasks: ['Pembinaan Pemuda','Pembinaan Persekutuan','Jumlah dan Anak Gereja'] },
-        { name: 'Pnt. Salomi Tameloy/S', photo: '', tasks: ['Pembinaan Keluarga dan Anak','Pembinaan Wanita Gereja'] },
-        { name: 'Dkn. Mestanisa Siahaitani.', photo: '', tasks: ['Pembinaan Kaum Bapak','Pembinaan Pester dan Kontekting'] }
+      { role: 'Ketua Seksi PTPU', name: 'Pnt. Williams Mahulette', photo: '', members: [
+        { name: 'Pnt. Helena Lakotany/K', photo: '', tasks: ['Pendataan Anak dan Katekisasi','Pembinaan Warga Gereja Profesional'] },
+        { name: 'Dkn. Marici Lakotany/L', photo: '', tasks: ['Pembinaan Pemuda','Pembinaan Peribadahan Jemaat dan Musik Gereja'] },
+        { name: 'Pnt. Salomi Tanmelay/G', photo: '', tasks: ['Pembinaan Laki-Laki dan Perempuan','Pembinaan Warga Gereja Senior'] },
+        { name: 'Dkn. Kostansa Sahertian/L.', photo: '', tasks: ['Pembinaan Keluarga','Pembinaan Pastoralia dan Konseling'] }
       ]},
-      { role: 'Ketua Seksi PIPK', name: 'Pnt. Idorwarky A. Katuwora', photo: '', members: [
-        { name: 'Pnt. Y. James Lakotof', photo: '', tasks: ['Pemberitaan Kedi Sitaan','Pembinaan Kelompok','Pengembangan Pelayanan'] },
-        { name: 'Dkn. Robby Tukley', photo: '', tasks: ['Pelayanan Hukum dan Advokasi','Sosial Pemberdayaan Umat'] },
-        { name: 'Dkn. Tramahe Nuaranof', photo: '', tasks: ['Pelayanan Kesehatan','Pelayanan Pendidikan'] }
+      { role: 'Ketua Seksi PIPK', name: 'Pnt. Edorward Aktaulora', photo: '', members: [
+        { name: 'Pnt. Yuliana Lakfo/T', photo: '', tasks: ['Pemberitaan Injil','Pelayanan Pemberdayaan Ekonomi Umat'] },
+        { name: 'Dkn. Robby Tutkey', photo: '', tasks: ['Pelayanan Hukum dan Advokasi','Sosial Politik/Budaya Umat'] },
+        { name: 'Dkn. Trenike Nusamara/L', photo: '', tasks: ['Pelayanan Kesehatan','Pelayanan Pendidikan'] }
       ]},
-      { role: 'Ketua Seksi POS', name: 'Pnt. Uman Lptley', photo: '', members: [
-        { name: 'Dkn. Yulinda Tameloy/L', photo: '', tasks: ['Pembinaan Kerei Jemaat Lainnya','Pembinaan Gorga','Pembinaan Keluarga Muda'] },
-        { name: 'Dkn. Charlton Koletttura', photo: '', tasks: ['Pelayanan Liturgi dan Khotbah','Girdiaya','Bincana Alam dan Sosial'] }
+      { role: 'Ketua Seksi POS', name: 'Pnt. Usman Liptiay', photo: '', members: [
+        { name: 'Dkn. Yulinda Tanmelay/L', photo: '', tasks: ['Pembinaan Kerja sama Lintas Denominasi Gereja','Pembinaan Kerja sama antar Agama dan Aliran Kepercayaan'] },
+        { name: 'Dkn. Charton Korlefura', photo: '', tasks: ['Lingkungan Hidup dan Keutuhan Ciptaan','Bencana Alam dan Sosial'] }
       ]},
-      { role: 'Ketua Seksi PPK', name: 'Pnt. Ishak Tithawa', photo: '', members: [
-        { name: 'Dkn. Rina Tameloy/L', photo: '', tasks: ['Pembinaan Kesehatan Jemaat','Pembinaan Keluarga','Pembinaan Sumber-Sumber Daya Gereja'] },
-        { name: 'Dkn. Yusuf Tameloy', photo: '', tasks: ['Pembinaan Pengembangan Jemaat','Pembinaan Kewirausahaan'] },
-        { name: 'Dkn. Albertina Oraplean', photo: '', tasks: ['Pengelolaan Program','Pembinaan Perempuan dan Anak'] },
-        { name: 'Dkn. Libet Kotlura', photo: '', tasks: ['Pembinaan Pendidikan dan Keterampilan','Pembinaan Keluarga Muda'] },
-        { name: 'Pnt. Welom Nusamaru', photo: '', tasks: ['Pengelolaan Tormas','Dokumentasi dan Publikasi'] }
+      { role: 'Ketua Seksi PPK', name: 'Pnt. Izhak Titiheru', photo: '', members: [
+        { name: 'Dkn. Rina Tanmelay/L', photo: '', tasks: ['Pembinaan Kapasitas Staf'] },
+        { name: 'Dkn. Penina Tuakora/W', photo: '', tasks: ['Pembinaan Sistem Manajemen Keuangan Gereja','Pembinaan Sumber-Sumber Keuangan Gereja'] },
+        { name: 'Dkn. Yusuf Tanmelay', photo: '', tasks: ['Pembinaan Pengembangan Infrastruktur','Pembinaan Aparatur Pelayan'] },
+        { name: 'Dkn. Albertina Oraplean', photo: '', tasks: ['Pengendalian Program','Penelitian Perencanaan dan Pengembangan'] },
+        { name: 'Dkn. Lisbet Korlefura/T', photo: '', tasks: ['Pembinaan Administrasi dan Manajemen','Pengelolaan Hubungan Kerja Sama'] },
+        { name: 'Pnt. Welem Nusamara', photo: '', tasks: ['Pengelolaan Informasi','Dokumentasi dan Publikasi'] }
       ]}
     ],
-    pilauNila: [
-      { name: 'Pnt. Yannes Lounura', photo: '' },
-      { name: 'Dkn. Welom Tamelloy', photo: '' }
+    PulauNila: [
+      { name: 'Pnt. Yamres Leunura', photo: '' },
+      { name: 'Dkn. Welem Tanmelay', photo: '' }
     ],
     tandaTanganSekretaris: 'Pnt. Y. Y. Leunura'
   };
@@ -2093,7 +2094,7 @@ form.addEventListener('submit', async (e) => {
   }
 
   function ocSektor(p) {
-    return '<p class="oc-sektor">Sektor Pelayanan: ' + esc(p.sektor || '—') + '</p>';
+    return '<p class="oc-sektor"> ' + esc(p.sektor || '') + '</p>';
   }
 
   // cls: kelas posisi/panah, contoh 'gc2 gr1 v-down'
@@ -2753,6 +2754,9 @@ function applyScheduleOverrides() {
     return out;
   }
 
+  // Sesi login harus dideklarasikan sebelum loadSite memanggil sektorRefs().
+  let currentUser = null;
+
   // -- Sektor (tuan rumah & pemimpin ibadah)
   function sektorRefs() {
     const out = [];
@@ -2794,7 +2798,6 @@ function applyScheduleOverrides() {
   })();
 
   /* ---------- Sesi login ---------- */
-  let currentUser = null;
   function getAccount(username) { return adminAccounts.filter((a) => a.username === username)[0]; }
   function accountName(username) { const a = getAccount(username); return a ? a.name : username; }
   function can(tab) {
