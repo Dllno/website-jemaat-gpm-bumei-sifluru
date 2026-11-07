@@ -2569,6 +2569,31 @@ async function loadScheduleFromSupabase() {
     return String(s || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   }
 
+  /* ---------- Indikator kekuatan kata sandi ---------- */
+  const PW_RULES = [
+    { key: 'upper',  label: 'Diawali huruf besar',   test: (p) => /^[A-Z]/.test(p) },
+    { key: 'symbol', label: 'Mengandung lambang (contoh: ! @ # $ %)', test: (p) => /[^A-Za-z0-9\s]/.test(p) },
+    { key: 'len',    label: 'Minimal 8 karakter',    test: (p) => p.length >= 8 },
+    { key: 'num',    label: 'Mengandung angka',      test: (p) => /\d/.test(p) }
+  ];
+  function pwValid(p) { p = String(p || ''); return PW_RULES.every((r) => r.test(p)); }
+  function pwMissing(p) { p = String(p || ''); return PW_RULES.filter((r) => !r.test(p)).map((r) => r.label.toLowerCase()); }
+  function pwIndicatorHtml() {
+    return '<ul class="pw-ind" data-pw-ind aria-live="polite">' +
+      PW_RULES.map((r) => '<li data-rule="' + r.key + '">' + r.label + '</li>').join('') + '</ul>';
+  }
+  document.addEventListener('input', (e) => {
+    const input = e.target;
+    if (!input || !input.hasAttribute || !input.hasAttribute('data-pw-check')) return;
+    const box = input.closest('.field');
+    const ind = box && box.querySelector('[data-pw-ind]');
+    if (!ind) return;
+    PW_RULES.forEach((r) => {
+      const li = ind.querySelector('[data-rule="' + r.key + '"]');
+      if (li) li.classList.toggle('ok', r.test(input.value));
+    });
+  });
+
   /* ---------- Pembatasan akses berdasarkan sektor akun ---------- */
   function sectorKeyForName(name) {
     const n = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2893,7 +2918,7 @@ function applyScheduleOverrides() {
             '<input type="text" id="regJabatan" maxlength="100" /></div>' +
           '<div class="form-row">' +
             '<div class="field"><label for="regPass">Kata sandi <span class="req">*</span></label>' +
-              '<input type="password" id="regPass" autocomplete="new-password" required /></div>' +
+              '<input type="password" id="regPass" autocomplete="new-password" data-pw-check required />' + pwIndicatorHtml() + '</div>' +
             '<div class="field"><label for="regPass2">Ulangi kata sandi <span class="req">*</span></label>' +
               '<input type="password" id="regPass2" autocomplete="new-password" required /></div>' +
           '</div>' +
@@ -3491,7 +3516,7 @@ function renderAdmJadwalForm() {
         '<div class="field"><label for="staffUsername">Username</label><input id="staffUsername" name="username" minlength="3" maxlength="40" autocomplete="off" required></div>' +
         '<div class="field"><label for="staffRoleNew">Jabatan</label><select id="staffRoleNew" name="role"><option value="admin">Admin</option><option value="bendahara">Bendahara</option></select></div>' +
         '<div class="field"><label for="staffSectorNew">Sektor (khusus Admin)</label><select id="staffSectorNew" name="sector"><option value="Embun Hermon">Embun Hermon</option><option value="Imanuel">Imanuel</option><option value="Maranatha">Maranatha</option><option value="Ebenhaezer">Ebenhaezer</option><option value="Efrata">Efrata</option><option value="Lahairoi">Lahairoi</option></select></div>' +
-        '<div class="field"><label for="staffPasswordNew">Password awal (minimal 8 karakter)</label><input id="staffPasswordNew" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div>' +
+        '<div class="field"><label for="staffPasswordNew">Password awal</label><input id="staffPasswordNew" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" data-pw-check required>' + pwIndicatorHtml() + '</div>' +
         '<button type="submit" class="btn btn-navy btn-sm">Buat akun di Supabase</button>' +
       '</form>' +
       '<div class="adm-staff-controls">' +
@@ -3526,7 +3551,7 @@ function renderAdmJadwalForm() {
         '<hr>' +
         '<h5>Ganti kata sandi</h5>' +
         '<div class="field"><label for="pwOld">Kata sandi lama</label><input type="password" id="pwOld" autocomplete="current-password" required></div>' +
-        '<div class="field"><label for="pwNew">Kata sandi baru (minimal 8 karakter)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" required></div>' +
+        '<div class="field"><label for="pwNew">Kata sandi baru</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" data-pw-check required>' + pwIndicatorHtml() + '</div>' +
         '<div class="field"><label for="pwConfirm">Konfirmasi kata sandi baru</label><input type="password" id="pwConfirm" autocomplete="new-password" minlength="8" required></div>' +
         '<p class="field-error" id="pwErr" role="alert"></p>' +
         '<div class="adm-actions"><button type="submit" class="btn btn-navy btn-sm">Ubah Kata Sandi</button></div>' +
@@ -3794,10 +3819,14 @@ function renderAdmJadwalForm() {
       lsSet(LS_SITE, siteStore);
       if (contentKey === 'hero') { applyHero(serverValue); renderHero(); }
       else if (contentKey === 'profile') { applyProfile(serverValue); renderProfile(); }
+      else if (contentKey === 'contact') { applyContact(serverValue); renderLocation(); renderContact(); renderSumbangan(); }
+      else if (contentKey === 'sektor') { applySektor(serverValue); renderSektor(); renderSchedules(); }
     } catch (error) {
       console.warn('Konten ' + contentKey + ' belum dapat dimuat dari server:', error);
     }
   }
+
+  const SYNC_LABEL = { hero: 'Beranda', profile: 'Profil', contact: 'Informasi & Kontak' };
 
   function formSpec(cfg) {
     return {
@@ -3811,15 +3840,23 @@ function renderAdmJadwalForm() {
             if (!saveSite(cfg.store, v)) return STORE_ERR;
             cfg.apply(v);
             cfg.after();
-            if (cfg.store === 'hero' || cfg.store === 'profile') {
+            if (SYNC_LABEL[cfg.store]) {
               syncSiteContentToServer(cfg.store, v).then(function (savedValue) {
                 siteStore[cfg.store] = savedValue;
                 lsSet(LS_SITE, siteStore);
                 cfg.apply(savedValue);
                 cfg.after();
-                toast((cfg.store === 'hero' ? 'Beranda' : 'Profil') + ' berhasil disimpan dan tersinkron untuk semua pengunjung.', 'success');
+                // Cek apakah server benar-benar menyimpan semua isian (bukan hanya sebagian).
+                const dropped = cfg.fields.filter(function (f) {
+                  return f.type !== 'image' && JSON.stringify(savedValue[f.key]) !== JSON.stringify(v[f.key]);
+                }).map(function (f) { return f.label; });
+                if (dropped.length) {
+                  toast('Server TIDAK menyimpan bagian ini: ' + dropped.join(', ') + '. Pengunjung masih melihat isi lama. Periksa Edge Function admin-auth.', 'error');
+                } else {
+                  toast(SYNC_LABEL[cfg.store] + ' berhasil disimpan dan tersinkron untuk semua pengunjung.', 'success');
+                }
               }).catch(function (error) {
-                toast(error.message || 'Gagal menyinkronkan konten ke server.', 'error');
+                toast('BELUM tersimpan di server (pengunjung belum melihat perubahan): ' + (error.message || 'gagal menyinkronkan konten.'), 'error');
               });
             }
             return null;
@@ -4409,6 +4446,8 @@ function renderAdmJadwalForm() {
               map[r.id] = Object.assign({}, map[r.id] || {}, { tanggal: (v.tanggal || '').trim() });
               saveSite('sektor', map);
               ref.tanggal = (v.tanggal || '').trim();
+              try { await syncSiteContentToServer('sektor', map); }
+              catch (error) { return 'Tuan rumah & pemimpin tersimpan, tetapi tanggal ibadah BELUM tersinkron ke server: ' + (error.message || 'gagal.'); }
             }
             applyScheduleOverrides();
             renderSchedules();
@@ -4494,7 +4533,7 @@ function renderAdmJadwalForm() {
     const password = form.elements.password.value;
     const submit = form.querySelector('button[type="submit"]');
     if (!/^[a-zA-Z0-9_.-]{3,40}$/.test(username)) { toast('Username harus 3–40 karakter dan memakai huruf/angka/._-', 'error'); return; }
-    if (password.length < 8) { toast('Password minimal 8 karakter.', 'error'); return; }
+    if (!pwValid(password)) { toast('Password belum memenuhi syarat: ' + pwMissing(password).join(', ') + '.', 'error'); return; }
     if (submit) { submit.disabled = true; submit.textContent = 'Membuat akun…'; }
     try {
       await kolektanRequest('create_staff_account', { username, role, sector: role === 'admin' ? sector : null, password });
@@ -4764,7 +4803,7 @@ function renderAdmJadwalForm() {
       if (!currentUser || !savedSession || !savedSession.access_token) {
         err.textContent = 'Sesi login tidak ditemukan. Silakan login kembali.'; return;
       }
-      if (newPass.length < 8) { err.textContent = 'Kata sandi baru minimal 8 karakter.'; return; }
+      if (!pwValid(newPass)) { err.textContent = 'Kata sandi baru belum memenuhi syarat: ' + pwMissing(newPass).join(', ') + '.'; return; }
       if (newPass !== confirmPass) { err.textContent = 'Konfirmasi kata sandi tidak sama.'; return; }
       const submit = form.querySelector('button[type="submit"]');
       if (submit) { submit.disabled = true; submit.textContent = 'Menyimpan…'; }
@@ -5059,6 +5098,8 @@ if (e.target.id === 'admJadwalForm') {
   loadSiteContentFromServer('devotions');
   loadSiteContentFromServer('announcements');
   loadSiteContentFromServer('ministries');
+  loadSiteContentFromServer('contact');
+  loadSiteContentFromServer('sektor');
   onScroll();
 
   window.setInterval(renderSchedules, 5 * 60 * 1000);
