@@ -362,7 +362,8 @@
     { key: 'pelayanan', label: 'Pelayanan' },
     { key: 'pemuda', label: 'Pemuda' },
     { key: 'sosial', label: 'Sosial' },
-    { key: 'anak', label: 'Anak-Anak' }
+    { key: 'anak', label: 'Anak-Anak' },
+    { key: 'kegiatan', label: 'Kegiatan' }
   ];
 
   const galleryItems = [
@@ -2041,6 +2042,9 @@ form.addEventListener('submit', async (e) => {
   // Nama & tugas disalin dari gambar; mohon cocokkan lagi dengan dokumen resmi.
   // (Super Admin dapat mengubah nama, sektor, tugas, dan foto lewat panel admin, tab "Struktur".)
   const strukturData = {
+    // Naikkan angka versi ini setiap kali data struktur di file ini diubah manual,
+    // supaya data lama yang tersimpan di browser/server tidak menimpa perubahan.
+    version: 2,
     period: '2025/2030',
     // Logo resmi GPM: simpan file di 'gambar/logo-gpm.jpeg' (ubah path jika berbeda), atau unggah lewat panel admin.
     logo: 'gambar/logo-gpm.jpeg',
@@ -2076,7 +2080,7 @@ form.addEventListener('submit', async (e) => {
         { name: 'Pnt. Welem Nusamara', photo: '', tasks: ['Pengelolaan Informasi','Dokumentasi dan Publikasi'] }
       ]}
     ],
-    PulauNila: [
+    pulauNila: [
       { name: 'Pnt. Yamres Leunura', photo: '' },
       { name: 'Dkn. Welem Tanmelay', photo: '' }
     ],
@@ -2152,12 +2156,12 @@ form.addEventListener('submit', async (e) => {
         '<div class="oc-grid">' + cols + '</div>' +
       '</div>';
 
-    const pilau =
-      '<div class="oc-pilau">' +
-        '<div class="oc-card oc-pilau-card">' +
+    const pulau =
+      '<div class="oc-pulau">' +
+        '<div class="oc-card oc-pulau-card">' +
           '<p class="oc-role">Majelis Pulau Nila</p>' +
-          '<div class="oc-pilau-list">' +
-            d.pilauNila.map((p, i) =>
+          '<div class="oc-pulau-list">' +
+            d.pulauNila.map((p, i) =>
               '<div class="oc-person">' +
                 '<div class="org-photo oc-photo">' + ocPhoto(p) + '</div>' +
                 '<p class="oc-name">' + (i + 1) + '. ' + esc(p.name) + '</p>' +
@@ -2179,7 +2183,7 @@ form.addEventListener('submit', async (e) => {
     box.innerHTML =
       '<div class="poster" id="strukturPoster" style="--poster-logo:url(\'' + logoUrl + '\')">' +
         head +
-        '<div class="poster-body"><div class="oc">' + top + sections + pilau + foot + '</div></div>' +
+        '<div class="poster-body"><div class="oc">' + top + sections + pulau + foot + '</div></div>' +
       '</div>';
   }
 
@@ -2791,7 +2795,8 @@ function applyScheduleOverrides() {
     replaceArr(dailyDevotions, s.devotions, 1);
     replaceArr(galleryItems, s.gallery);
     replaceArr(announcements, s.announcements);
-    if (s.struktur && Array.isArray(s.struktur.seksi) && Array.isArray(s.struktur.pilauNila) && s.struktur.ketua) {
+    if (s.struktur && Array.isArray(s.struktur.seksi) && Array.isArray(s.struktur.pulauNila) && s.struktur.ketua &&
+        s.struktur.version === strukturData.version) {
       Object.assign(strukturData, s.struktur);
     }
     if (s.sektor) applySektor(s.sektor);
@@ -4226,8 +4231,9 @@ function renderAdmJadwalForm() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success || !result.struktur) return;
       if (!Array.isArray(result.struktur.seksi) ||
-          !Array.isArray(result.struktur.pilauNila) ||
-          !result.struktur.ketua) return;
+          !Array.isArray(result.struktur.pulauNila) ||
+          !result.struktur.ketua ||
+          result.struktur.version !== strukturData.version) return;
       Object.assign(strukturData, result.struktur);
       siteStore.struktur = result.struktur;
       lsSet(LS_SITE, siteStore);
@@ -4313,9 +4319,9 @@ function renderAdmJadwalForm() {
           }));
         });
       });
-      d.pilauNila.forEach((p, j) => {
-        out.push(strukturPersonEntry('p' + j, 'Majelis Pilau Nila', 'Pilau Nila ' + (j + 1), p, {
-          del: function () { return strukturPersist(function () { d.pilauNila.splice(j, 1); }); }
+      d.pulauNila.forEach((p, j) => {
+        out.push(strukturPersonEntry('p' + j, 'Majelis Pulau Nila', 'Pulau Nila ' + (j + 1), p, {
+          del: function () { return strukturPersist(function () { d.pulauNila.splice(j, 1); }); }
         }));
       });
       return out;
@@ -4325,7 +4331,7 @@ function renderAdmJadwalForm() {
         strukturData.seksi.map((s, i) =>
           '<button type="button" class="btn btn-ghost btn-sm" data-adm="site-act" data-op="add-member" data-id="' + i + '">+ Anggota ' + esc(s.role.replace('Ketua ', '')) + '</button>'
         ).join('') +
-        '<button type="button" class="btn btn-ghost btn-sm" data-adm="site-act" data-op="add-pilau">+ Majelis Pilau Nila</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-adm="site-act" data-op="add-pulau">+ Majelis Pulau Nila</button>' +
       '</div>';
     },
     onAction: function (op, id) {
@@ -4336,15 +4342,16 @@ function renderAdmJadwalForm() {
         const err = strukturPersist(function () { d.seksi[i].members.push({ name: 'Nama Anggota Baru', photo: '', sektor: '', tasks: [] }); });
         return err ? { err: err } : { edit: 's' + i + 'm' + (d.seksi[i].members.length - 1) };
       }
-      if (op === 'add-pilau') {
-        const err = strukturPersist(function () { d.pilauNila.push({ name: 'Nama Majelis Baru', photo: '', sektor: '' }); });
-        return err ? { err: err } : { edit: 'p' + (d.pilauNila.length - 1) };
+      if (op === 'add-pulau') {
+        const err = strukturPersist(function () { d.pulauNila.push({ name: 'Nama Majelis Baru', photo: '', sektor: '' }); });
+        return err ? { err: err } : { edit: 'p' + (d.pulauNila.length - 1) };
       }
       return null;
     }
   };
 
-  // Sektor: tuan rumah & pemimpin ibadah
+  // Sektor: tuan rumah & 
+  // pemimpin ibadah
   const sektorSpec = {
     kind: 'list',
     intro: 'Isi nama dan foto tuan rumah serta pemimpin ibadah untuk setiap unit dan kelompok binakel. Tempat, hari, dan jam diubah di tab "Jadwal Ibadah".',
