@@ -1532,3 +1532,10 @@ p{ margin:0 0 1rem; }
 .adm-staff-create button{justify-self:start;align-self:end}
 .adm-staff-create select:disabled{opacity:.55}
 @media(max-width:600px){.adm-staff-create{grid-template-columns:1fr}.adm-staff-create h5{grid-column:auto}}
+
+/* Indikator kata sandi */
+.pw-ind{ list-style:none; margin:.55rem 0 0; padding:0; display:grid; gap:.25rem; font-size:.8rem; }
+.pw-ind li{ position:relative; padding-left:1.35rem; color:#b42318; transition:color .2s; }
+.pw-ind li::before{ content:'\2715'; position:absolute; left:0; font-weight:700; }
+.pw-ind li.ok{ color:#067647; }
+.pw-ind li.ok::before{ content:'\2713'; }
