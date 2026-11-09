@@ -1541,6 +1541,7 @@ p{ margin:0 0 1rem; }
 .pw-ind li.ok::before{ content:'\2713'; }
 
 
+
 /* Petugas ibadah: Tuagama, Kantoria, Kolektan */
 .petugas-section{ background:#fff; }
 .petugas-section .section-head{ margin-bottom:clamp(1.5rem, 3vw, 2.25rem); }
