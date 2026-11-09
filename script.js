@@ -2364,27 +2364,27 @@ async function loadScheduleFromSupabase() {
 
   // Hak akses: Admin hanya dapat mengelola jadwal, unit, dan binakel di sektornya sendiri.
   const ROLE_TABS = {
-    superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff'],
+    superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff', 'petugas'],
     admin: ['jadwal', 'sektor', 'password'],
     bendahara: ['kolektan', 'password']
   };
   const TAB_LABEL = {
     jadwal: 'Jadwal Ibadah', kolektan: 'Kolektan', beranda: 'Beranda', profil: 'Profil', struktur: 'Struktur',
     sektor: 'Sektor', pelayanan: 'Pelayanan', berita: 'Berita', renungan: 'Renungan', galeri: 'Galeri',
-    pengumuman: 'Pengumuman', informasi: 'Informasi & Kontak', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas'
+    pengumuman: 'Pengumuman', informasi: 'Informasi & Kontak', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas', petugas: 'Petugas'
   };
   // Ikon & keterangan singkat untuk halaman "Menu Panel"
   const TAB_ICON = {
     jadwal: 'calendar-check', kolektan: 'hand-holding-heart', beranda: 'church', profil: 'book-open', struktur: 'sitemap',
     sektor: 'people-group', pelayanan: 'hands-holding-circle', berita: 'newspaper', renungan: 'hands-praying',
-    galeri: 'images', pengumuman: 'bullhorn', informasi: 'phone', pesan: 'envelope', password: 'shield-heart', staff: 'users'
+    galeri: 'images', pengumuman: 'bullhorn', informasi: 'phone', pesan: 'envelope', password: 'shield-heart', staff: 'users', petugas: 'users-line'
   };
   const TAB_DESC = {
     jadwal: 'Jadwal sektor sendiri, unit, dan binakel', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
     profil: 'Profil, visi, misi, sejarah', struktur: 'Majelis & kepengurusan', sektor: 'Tuan rumah & pemimpin ibadah',
     pelayanan: 'Kartu pelayanan jemaat', berita: 'Berita & kegiatan', renungan: 'Renungan harian',
     galeri: 'Foto dokumentasi', pengumuman: 'Pengumuman jemaat', informasi: 'Alamat, kontak, peta, rekening',
-    pesan: 'Pesan dari formulir Kontak pengunjung', password: 'Ganti kata sandi akun sendiri', staff: 'Daftar 6 Admin dan 2 Bendahara'
+    pesan: 'Pesan dari formulir Kontak pengunjung', password: 'Ganti kata sandi akun sendiri', staff: 'Daftar 6 Admin dan 2 Bendahara', petugas: 'Tuagama, Kantoria, dan Kolektan'
   };
 
   const LS_JADWAL = 'gpm-bsf-jadwal';
@@ -3965,6 +3965,165 @@ function renderAdmJadwalForm() {
     }
   }
 
+
+  /* ==========================================================
+     PETUGAS IBADAH (Tuagama, Kantoria, Kolektan)
+     Data: tabel public.petugas_items (Supabase). Foto: bucket foto-jemaat/petugas/.
+     Hanya Super Admin yang dapat mengubah; semua pengunjung dapat melihat.
+     ========================================================== */
+  const PETUGAS_SLOTS = [
+    { slot: 'tuagama_1', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 1', person: true, defName: 'Bpk. Philipus Lekransy', maxPx: 600 },
+    { slot: 'tuagama_2', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 2', person: true, defName: 'Ibu. Anthoneta Ketno', maxPx: 600 },
+    { slot: 'kantoria', group: 'Kantoria', title: 'Kantoria', person: false, maxPx: 960 },
+    { slot: 'kolektan', group: 'Kolektan', title: 'Kolektan', person: false, maxPx: 960 }
+  ];
+  let petugasRows = {};      // slot -> { name, image_path }
+  let petugasReady = false;  // true bila data berhasil dibaca dari Supabase
+
+  function petugasPhotoSrc(path) {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path) || path.charAt(0) === '/') return imageUrl(path, 900);
+    return galleryPublicUrl(path);
+  }
+
+  function petugasPhotoHtml(row, ratio, alt) {
+    const src = row && row.image_path ? petugasPhotoSrc(row.image_path) : '';
+    return src
+      ? '<img src="' + esc(src) + '" alt="' + esc(alt) + '" loading="lazy" onerror="imgFallback(this)" />'
+      : '<span class="petugas-ph">FOTO<br>' + (ratio === 'p' ? '3 × 4' : '480 × 320') + '</span>';
+  }
+
+  function petugasRowOf(def) {
+    if (petugasReady) return petugasRows[def.slot] || null;
+    return { name: def.defName || '', image_path: '' };   // cadangan bila Supabase belum terhubung
+  }
+
+  function renderPetugas() {
+    const box = $('#petugasContent');
+    const sec = $('#petugas');
+    if (!box) return;
+    const people = PETUGAS_SLOTS.filter((d) => d.person).map((d) => ({ d: d, r: petugasRowOf(d) })).filter((x) => x.r);
+    const wide = PETUGAS_SLOTS.filter((d) => !d.person).map((d) => ({ d: d, r: petugasRowOf(d) })).filter((x) => x.r);
+    let html = '';
+    if (people.length) {
+      html += '<div class="petugas-people">' + people.map((x) =>
+        '<figure class="petugas-person">' +
+          '<div class="petugas-photo petugas-photo--p">' + petugasPhotoHtml(x.r, 'p', 'Foto ' + (x.r.name || x.d.title)) + '</div>' +
+          '<figcaption>' + esc(x.r.name || x.d.defName || '') + '</figcaption>' +
+        '</figure>').join('') + '</div>';
+    }
+    wide.forEach((x) => {
+      html += '<div class="petugas-block">' +
+        '<h3 class="petugas-sub">' + esc(x.d.group) + '</h3>' +
+        '<div class="petugas-photo petugas-photo--l">' + petugasPhotoHtml(x.r, 'l', 'Foto ' + x.d.group) + '</div>' +
+      '</div>';
+    });
+    box.innerHTML = html;
+    if (sec) sec.hidden = !html;
+  }
+
+  async function loadPetugasFromSupabase() {
+    try {
+      const response = await fetch(SUPABASE_URL + '/rest/v1/petugas_items?select=slot,name,image_path', { headers: galleryHeaders(null) });
+      const rows = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(rows)) throw new Error((rows && rows.message) || 'Tabel petugas_items belum dapat dibaca.');
+      petugasRows = {};
+      rows.forEach((r) => { petugasRows[r.slot] = { name: r.name || '', image_path: r.image_path || '' }; });
+      petugasReady = true;
+    } catch (error) {
+      console.warn('Petugas belum dapat dimuat dari Supabase:', error);
+      petugasReady = false;
+    }
+    renderPetugas();
+  }
+
+  async function uploadPetugasImage(dataUrl, slot, token) {
+    const blob = await (await fetch(dataUrl)).blob();
+    if (!blob.type.startsWith('image/')) throw new Error('Berkas harus berupa gambar.');
+    if (blob.size > 5 * 1024 * 1024) throw new Error('Ukuran foto maksimal 5 MB.');
+    const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = 'petugas/' + slot + '-' + Date.now() + '.' + ext;
+    const response = await fetch(SUPABASE_URL + '/storage/v1/object/' + GALLERY_BUCKET + '/' + path.split('/').map(encodeURIComponent).join('/'), {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': blob.type, 'x-upsert': 'false' },
+      body: blob
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.message || body.error || 'Foto gagal diunggah. Pastikan file supabase-petugas.sql sudah dijalankan.');
+    }
+    return path;
+  }
+
+  // Menghapus berkas lama di Storage (jika gagal, data tetap aman: hanya berkas yatim)
+  function removePetugasFile(path, token) {
+    if (!path || path.indexOf('petugas/') !== 0) return;
+    fetch(SUPABASE_URL + '/storage/v1/object/' + GALLERY_BUCKET + '/' + path.split('/').map(encodeURIComponent).join('/'), {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + token }
+    }).catch(function () {});
+  }
+
+  function petugasToken() {
+    if (!currentUser || currentUser.role !== 'superadmin') return '';
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    return session && session.access_token ? session.access_token : '';
+  }
+
+  const petugasSpec = {
+    kind: 'list',
+    intro: 'Ubah nama dan foto Tuagama, serta foto Kantoria dan Kolektan. Perubahan tersimpan di Supabase dan langsung tampil untuk semua pengunjung. Tombol Hapus menghilangkan bagian itu dari website.',
+    entries: function () {
+      return PETUGAS_SLOTS.map((d) => {
+        const row = petugasRows[d.slot] || null;
+        const fields = [];
+        if (d.person) fields.push({ key: 'name', label: 'Nama', type: 'text', max: 120 });
+        fields.push({
+          key: 'photo', label: d.person ? 'Foto (3 × 4)' : 'Foto (480 × 320 px, lanskap)', type: 'image', maxPx: d.maxPx
+        });
+        return {
+          id: d.slot, group: d.group, title: d.title,
+          sub: row ? (d.person ? (row.name || 'Tanpa nama') : 'Foto ' + (row.image_path ? 'sudah diunggah' : 'belum diunggah')) : 'Belum ada — tekan Ubah untuk menambahkan',
+          fields: fields,
+          vals: { name: row ? row.name : (d.defName || ''), photo: row ? row.image_path : '' },
+          save: async function (v) {
+            const token = petugasToken();
+            if (!token) return 'Hanya Super Admin yang dapat mengubah Petugas. Silakan login kembali.';
+            if (d.person && !String(v.name || '').trim()) return 'Nama wajib diisi.';
+            if (!d.person && !v.photo) return 'Foto wajib dipilih. Untuk menghilangkan bagian ini gunakan tombol Hapus.';
+            const oldPath = row ? row.image_path : '';
+            let path = v.photo || '';
+            if (path.indexOf('data:') === 0) path = await uploadPetugasImage(path, d.slot, token);
+            else if (path.indexOf(galleryPublicUrl('')) === 0) path = decodeURIComponent(path.slice(galleryPublicUrl('').length));
+            const response = await fetch(SUPABASE_URL + '/rest/v1/petugas_items?on_conflict=slot', {
+              method: 'POST',
+              headers: Object.assign(galleryHeaders(token), { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+              body: JSON.stringify({ slot: d.slot, name: d.person ? String(v.name).trim() : '', image_path: path, updated_at: new Date().toISOString() })
+            });
+            const out = await response.json().catch(() => ({}));
+            if (!response.ok) return (out && (out.message || out.details)) || 'Gagal menyimpan ke tabel petugas_items. Pastikan file supabase-petugas.sql sudah dijalankan.';
+            petugasRows[d.slot] = { name: d.person ? String(v.name).trim() : '', image_path: path };
+            petugasReady = true;
+            if (oldPath && oldPath !== path) removePetugasFile(oldPath, token);
+            renderPetugas();
+            return null;
+          },
+          del: row ? async function () {
+            const token = petugasToken();
+            if (!token) return 'Hanya Super Admin yang dapat menghapus. Silakan login kembali.';
+            const response = await fetch(SUPABASE_URL + '/rest/v1/petugas_items?slot=eq.' + encodeURIComponent(d.slot), {
+              method: 'DELETE', headers: galleryHeaders(token)
+            });
+            if (!response.ok) return 'Penghapusan di Supabase gagal. Periksa izin tabel petugas_items.';
+            removePetugasFile(row.image_path, token);
+            delete petugasRows[d.slot];
+            renderPetugas();
+            return null;
+          } : null
+        };
+      });
+    }
+  };
+
   function makeListSpec(cfg) {
     const labelOf = (k) => { const f = cfg.fields.filter((x) => x.key === k)[0]; return f ? f.label : k; };
     async function finish(backup) {
@@ -4461,7 +4620,7 @@ function renderAdmJadwalForm() {
   const SITE_TABS = {
     beranda: berandaSpec, profil: profilSpec, struktur: strukturSpec, sektor: sektorSpec,
     pelayanan: pelayananSpec, berita: beritaSpec, renungan: renunganSpec, galeri: galeriSpec,
-    pengumuman: pengumumanSpec, informasi: informasiSpec
+    pengumuman: pengumumanSpec, informasi: informasiSpec, petugas: petugasSpec
   };
 
   /* -- Tampilan editor -- */
@@ -4596,7 +4755,7 @@ function renderAdmJadwalForm() {
       const entry = spec.entries().filter((x) => x.id === id)[0];
       if (!entry || !entry.del) return;
       if (!window.confirm('Hapus "' + entry.title + '"? Tindakan ini tidak dapat dibatalkan.')) return;
-      const err = entry.del();
+      const err = await entry.del();
       if (err) { toast(err, 'error'); return; }
       toast('Data dihapus.', 'success');
       renderAdmBody();
@@ -5082,6 +5241,7 @@ if (e.target.id === 'admJadwalForm') {
   renderGalleryFilters();
   renderGallery();
   loadGalleryFromSupabase();
+  loadPetugasFromSupabase();
   renderAnnouncements();
   renderTopbar();
   renderLocation();
