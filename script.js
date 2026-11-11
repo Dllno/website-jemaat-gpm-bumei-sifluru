@@ -4284,7 +4284,7 @@ function renderAdmJadwalForm() {
       { key: 'vision', label: 'Visi', type: 'textarea', rows: 3 },
       { key: 'missions', label: 'Misi', type: 'lines', rows: 5, hint: 'Satu misi per baris. Misi pertama tampil di kartu; semuanya tampil di "Selengkapnya".' },
       { key: 'values', label: 'Nilai pelayanan', type: 'lines', rows: 6, hint: 'Satu nilai per baris, format: Judul | Penjelasan' },
-      { key: 'history', label: 'Sejarah singkat', type: 'lines', rows: 5, hint: 'Satu paragraf per baris.' },
+      { key: 'history', label: 'Sejarah singkat', type: 'lines', rows: 12, max: 10000, hint: 'Maksimal 10000 karakter. Satu paragraf per baris.' },
       { key: 'building', label: 'Nama gedung gereja', type: 'text' },
       { key: 'classis', label: 'Klasis', type: 'text' },
       { key: 'region', label: 'Wilayah (kecamatan / kabupaten)', type: 'text' },
