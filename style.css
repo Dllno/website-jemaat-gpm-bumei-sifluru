@@ -1541,7 +1541,6 @@ p{ margin:0 0 1rem; }
 .pw-ind li.ok::before{ content:'\2713'; }
 
 
-
 /* Petugas ibadah: Tuagama, Kantoria, Kolektan */
 .petugas-section{ background:#fff; }
 .petugas-section .section-head{ margin-bottom:clamp(1.5rem, 3vw, 2.25rem); }
@@ -1561,3 +1560,56 @@ p{ margin:0 0 1rem; }
 .petugas-sub{
   margin:0 0 1rem; font-family:var(--head-font); font-size:clamp(1.25rem, 2.4vw, 1.6rem); color:var(--navy);
 }
+
+/* ==========================================================
+   PERBAIKAN TAMPILAN: Tuagama 4 × 2 & foto Struktur seragam
+   ========================================================== */
+/* Tuagama: 8 foto = 4 kolom di atas, 4 kolom di bawah */
+.petugas-people{
+  display:grid; grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:clamp(1rem, 2.5vw, 2rem); max-width:860px; margin-inline:auto; justify-content:normal;
+}
+.petugas-person{ width:100%; }
+.petugas-person figcaption{ min-height:2.7em; display:flex; align-items:flex-start; justify-content:center; }
+.petugas-photo{ border-radius:var(--radius-md); }
+@media screen and (max-width:600px){
+  .petugas-people{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+
+/* Struktur: bingkai foto sama seperti Tuagama (sudut membulat, ukuran seragam 3 × 4) */
+.oc-photo{
+  width:100px; max-width:100%; aspect-ratio:3 / 4; margin:.55rem auto;
+  overflow:hidden; background:var(--light); border:1px solid var(--line);
+  border-radius:var(--radius-md); box-shadow:var(--shadow-1);
+  display:grid; place-items:center; flex:0 0 auto;
+  font-size:.7rem; font-weight:600; letter-spacing:.05em; line-height:1.5; text-align:center; color:var(--muted);
+}
+.oc-member .oc-photo{ width:84px; }
+.oc-photo img{ display:block; width:100%; height:100%; object-fit:cover; }
+
+/* Struktur: isi kartu rata, nama sejajar (tidak naik-turun) */
+.oc-card{ display:flex; flex-direction:column; align-items:center; }
+.oc-role{ min-height:2.6em; display:flex; align-items:center; justify-content:center; }
+.oc-name{ min-height:2.7em; display:flex; align-items:center; justify-content:center; text-align:center; width:100%; }
+.oc-sektor{ min-height:1.4em; text-align:center; }
+.oc-tasks{ align-self:stretch; }
+.oc-person{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+
+/* Kartu seksi: tinggi baris disamakan lintas kolom */
+.oc-grid{ row-gap:.8rem; align-items:stretch; }
+@supports (grid-template-rows: subgrid){
+  .oc-col{ grid-row:span var(--rows, 1); grid-template-rows:subgrid; gap:.8rem; }
+}
+.oc-col > .oc-card{ height:100%; }
+
+
+/* Petugas: Kolektan per sektor = 2 baris x 3 kolom, foto 360 x 240 px (Kantoria tetap 480 x 320) */
+.petugas-kolektan-grid{
+  display:grid; grid-template-columns:repeat(3, minmax(0, 360px)); justify-content:center;
+  gap:clamp(1rem, 2.5vw, 2rem); margin-top:clamp(2rem, 4.5vw, 3rem); text-align:center;
+}
+.petugas-kolektan-grid .petugas-block{ margin-top:0; }
+.petugas-kolektan-grid .petugas-sub{ font-size:clamp(1rem, 1.6vw, 1.15rem); }
+.petugas-photo--k{ width:100%; max-width:360px; aspect-ratio:3 / 2; margin-inline:auto; }
+@media (max-width:900px){ .petugas-kolektan-grid{ grid-template-columns:repeat(2, minmax(0, 360px)); } }
+@media (max-width:600px){ .petugas-kolektan-grid{ grid-template-columns:minmax(0, 360px); } }
