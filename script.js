@@ -901,6 +901,20 @@
     ].join('')
   : '';
       
+      // Nama tuan rumah & pemimpin ibadah untuk semua card ibadah sektor / unit / binakel.
+      const isPlaceholder = (v) => /^Nama (Tuan Rumah|Pemimpin Ibadah)$/i.test(v || '') || /^Status \/ Jabatan$/i.test(v || '');
+      const pickName = (v) => (v && !isPlaceholder(v) ? v : '');
+      const hostNameCard = pickName(item.nama_tuan_rumah) || pickName(item.host && item.host.name);
+      const leaderNameCard = pickName(item.nama_pemimpin_ibadah) || pickName(item.leader && item.leader.name);
+      const leaderStatusCard = pickName(item.status_pemimpin_ibadah) || pickName(item.leader && item.leader.status);
+      const isSektorCard = ['sektor', 'unit', 'binakel'].indexOf(item.category) !== -1;
+      const peopleHtml = isSektorCard
+        ? '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
+            '<span><strong>Tuan Rumah:</strong> ' + (hostNameCard ? esc(hostNameCard) : '<em>Belum diisi</em>') + '</span></li>' +
+          '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
+            '<span><strong>Pemimpin Ibadah:</strong> ' + (leaderNameCard ? esc(leaderNameCard) + (leaderStatusCard ? ' <small>(' + esc(leaderStatusCard) + ')</small>' : '') : '<em>Belum diisi</em>') + '</span></li>'
+        : '';
+
       card.innerHTML =
         '<div class="schedule-top">' +
           '<div class="schedule-icon"><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#church"></use></svg></div>' +
@@ -909,6 +923,7 @@
         '<ul class="schedule-meta">' +
           '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#calendar"></use></svg><span>' + esc(dayNames[item.day]) + ', pukul ' + esc(item.time) + ' WIT</span></li>' +
           '<li><svg class="icon" viewBox="0 0 384 512" aria-hidden="true"><use href="icons.svg#location-dot"></use></svg><span>' + esc(item.place) + '</span></li>' +
+          peopleHtml +
           '<li><svg class="icon" viewBox="0 0 448 512" aria-hidden="true"><use href="icons.svg#tag"></use></svg><span>' + esc(item.categoryLabel) + '</span></li>' +
         '</ul>' +
         '<p class="schedule-note">' + esc(item.note) + '</p>' +
@@ -2153,7 +2168,7 @@ form.addEventListener('submit', async (e) => {
     const sections =
       '<div class="oc-sections">' +
         '<div class="oc-bus" aria-hidden="true">' + drops + '</div>' +
-        '<div class="oc-grid">' + cols + '</div>' +
+        '<div class="oc-grid" style="--rows:' + (1 + Math.max.apply(null, d.seksi.map((x) => x.members.length))) + '">' + cols + '</div>' +
       '</div>';
 
     const pulau =
@@ -2371,7 +2386,7 @@ async function loadScheduleFromSupabase() {
   const TAB_LABEL = {
     jadwal: 'Jadwal Ibadah', kolektan: 'Kolektan', beranda: 'Beranda', profil: 'Profil', struktur: 'Struktur',
     sektor: 'Sektor', pelayanan: 'Pelayanan', berita: 'Berita', renungan: 'Renungan', galeri: 'Galeri',
-    pengumuman: 'Pengumuman', informasi: 'Informasi & Kontak', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas', petugas: 'Petugas'
+    pengumuman: 'Pengumuman', informasi: 'Informasi & Sumbangan', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas', petugas: 'Tuagama-Kantoria&Kolektan'
   };
   // Ikon & keterangan singkat untuk halaman "Menu Panel"
   const TAB_ICON = {
@@ -2670,6 +2685,10 @@ function applyScheduleOverrides() {
     // Terapkan lokasi foto dari Supabase.
     r.ref.foto_tuan_rumah = o.foto_tuan_rumah || null;
     r.ref.foto_pemimpin_ibadah = o.foto_pemimpin_ibadah || null;
+    // Nama tuan rumah & pemimpin ibadah (ditampilkan di card jadwal sektor).
+    r.ref.nama_tuan_rumah = o.nama_tuan_rumah || '';
+    r.ref.nama_pemimpin_ibadah = o.nama_pemimpin_ibadah || '';
+    r.ref.status_pemimpin_ibadah = o.status_pemimpin_ibadah || '';
     if (r.ref.host && o.nama_tuan_rumah) r.ref.host.name = o.nama_tuan_rumah;
     if (r.ref.leader && o.nama_pemimpin_ibadah) r.ref.leader.name = o.nama_pemimpin_ibadah;
     if (r.ref.leader && o.status_pemimpin_ibadah) r.ref.leader.status = o.status_pemimpin_ibadah;
@@ -2796,6 +2815,14 @@ function applyScheduleOverrides() {
     });
     return out;
   }
+  function sektorRefsAll() {
+    const out = [];
+    sektorData.forEach((s) => {
+      s.units.forEach((u) => out.push({ id: 'sek-' + s.id + '-' + u.id, ref: u, kind: 'unit' }));
+      s.binakel.groups.forEach((g) => out.push({ id: 'sek-' + s.id + '-' + g.id, ref: g, kind: 'kel' }));
+    });
+    return out;
+  }
   function applySektorOne(ref, kind, o) {
     if (o.hostName) ref.host.name = o.hostName;
     if (typeof o.hostPhoto === 'string') ref.host.photo = o.hostPhoto;
@@ -2806,7 +2833,7 @@ function applyScheduleOverrides() {
   }
   function applySektor(map) {
     if (!map || typeof map !== 'object') return;
-    sektorRefs().forEach((r) => { if (map[r.id]) applySektorOne(r.ref, r.kind, map[r.id]); });
+    sektorRefsAll().forEach((r) => { if (map[r.id]) applySektorOne(r.ref, r.kind, map[r.id]); });
   }
 
   // Muat semua perubahan tersimpan
@@ -3193,6 +3220,7 @@ async function renderAdmPesan() {
   const accessToken = session?.access_token;
 
   admBody.innerHTML =
+    (admMulti() ? admMenuBackHtml() : '') +
     '<div class="adm-intro">' +
       '<h3>Kontak &amp; Pesan</h3>' +
       '<p>Kelola pesan yang dikirim pengunjung website Jemaat GPM Bumei Sifluru.</p>' +
@@ -3509,6 +3537,7 @@ function renderAdmJadwalForm() {
         (staffFilter.status === 'all' || status === staffFilter.status);
     });
     admBody.innerHTML =
+      (admMulti() ? admMenuBackHtml() : '') +
       '<h4 class="adm-form-title">ADMIN YANG BERTUGAS</h4>' +
       '<p class="adm-intro">Daftar akun Admin dan Bendahara diambil langsung dari database Supabase. Status aktif/nonaktif berlaku lintas perangkat.</p>' +
       '<form id="staffCreateForm" class="adm-staff-create" novalidate>' +
@@ -3541,6 +3570,7 @@ function renderAdmJadwalForm() {
   }
   function renderAdmPassword() {
     admBody.innerHTML =
+      (admMulti() ? admMenuBackHtml() : '') +
       '<h4 class="adm-form-title">Ubah Kata Sandi</h4>' +
       '<p class="adm-intro">Ganti kata sandi akun yang sedang login. Perubahan disimpan langsung di Supabase dan berlaku di semua perangkat.</p>' +
       '<form id="admPasswordForm" novalidate>' +
@@ -3826,7 +3856,7 @@ function renderAdmJadwalForm() {
     }
   }
 
-  const SYNC_LABEL = { hero: 'Beranda', profile: 'Profil', contact: 'Informasi & Kontak' };
+  const SYNC_LABEL = { hero: 'Beranda', profile: 'Profil', contact: 'Informasi & Sumbangan' };
 
   function formSpec(cfg) {
     return {
@@ -3974,8 +4004,19 @@ function renderAdmJadwalForm() {
   const PETUGAS_SLOTS = [
     { slot: 'tuagama_1', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 1', person: true, defName: 'Bpk. Philipus Lekransy', maxPx: 600 },
     { slot: 'tuagama_2', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 2', person: true, defName: 'Ibu. Anthoneta Ketno', maxPx: 600 },
+    { slot: 'tuagama_3', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 3', person: true, defName: '', placeholder: true, maxPx: 600 },
+    { slot: 'tuagama_4', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 4', person: true, defName: '', placeholder: true, maxPx: 600 },
+    { slot: 'tuagama_5', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 5', person: true, defName: '', placeholder: true, maxPx: 600 },
+    { slot: 'tuagama_6', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 6', person: true, defName: '', placeholder: true, maxPx: 600 },
+    { slot: 'tuagama_7', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 7', person: true, defName: '', placeholder: true, maxPx: 600 },
+    { slot: 'tuagama_8', group: 'Tuagama Jemaat Bumei Sifluru', title: 'Tuagama 8', person: true, defName: '', placeholder: true, maxPx: 600 },
     { slot: 'kantoria', group: 'Kantoria', title: 'Kantoria', person: false, maxPx: 960 },
-    { slot: 'kolektan', group: 'Kolektan', title: 'Kolektan', person: false, maxPx: 960 }
+    { slot: 'kolektan_embun_hermon', group: 'Kolektan Sektor Embun Hermon', title: 'Kolektan Sektor Embun Hermon', person: false, placeholder: true, maxPx: 960 },
+    { slot: 'kolektan', group: 'Kolektan Sektor Imanuel', title: 'Kolektan Sektor Imanuel', person: false, maxPx: 960 },
+    { slot: 'kolektan_maranatha', group: 'Kolektan Sektor Maranatha', title: 'Kolektan Sektor Maranatha', person: false, placeholder: true, maxPx: 960 },
+    { slot: 'kolektan_ebenheazer', group: 'Kolektan Sektor Ebenheazer', title: 'Kolektan Sektor Ebenheazer', person: false, placeholder: true, maxPx: 960 },
+    { slot: 'kolektan_efrata', group: 'Kolektan Sektor Efrata', title: 'Kolektan Sektor Efrata', person: false, placeholder: true, maxPx: 960 },
+    { slot: 'kolektan_lahai_roi', group: 'Kolektan Sektor Lahai-Roi', title: 'Kolektan Sektor Lahai-Roi', person: false, placeholder: true, maxPx: 960 }
   ];
   let petugasRows = {};      // slot -> { name, image_path }
   let petugasReady = false;  // true bila data berhasil dibaca dari Supabase
@@ -3990,11 +4031,11 @@ function renderAdmJadwalForm() {
     const src = row && row.image_path ? petugasPhotoSrc(row.image_path) : '';
     return src
       ? '<img src="' + esc(src) + '" alt="' + esc(alt) + '" loading="lazy" onerror="imgFallback(this)" />'
-      : '<span class="petugas-ph">FOTO<br>' + (ratio === 'p' ? '3 × 4' : '480 × 320') + '</span>';
+      : '<span class="petugas-ph">FOTO<br>' + (ratio === 'p' ? '3 × 4' : ratio === 'k' ? '360 × 240' : '480 × 320') + '</span>';
   }
 
   function petugasRowOf(def) {
-    if (petugasReady) return petugasRows[def.slot] || null;
+    if (petugasReady) return petugasRows[def.slot] || (def.placeholder ? { name: '', image_path: '' } : null);
     return { name: def.defName || '', image_path: '' };   // cadangan bila Supabase belum terhubung
   }
 
@@ -4009,15 +4050,25 @@ function renderAdmJadwalForm() {
       html += '<div class="petugas-people">' + people.map((x) =>
         '<figure class="petugas-person">' +
           '<div class="petugas-photo petugas-photo--p">' + petugasPhotoHtml(x.r, 'p', 'Foto ' + (x.r.name || x.d.title)) + '</div>' +
-          '<figcaption>' + esc(x.r.name || x.d.defName || '') + '</figcaption>' +
+          '<figcaption>' + esc(x.r.name || x.d.defName || (x.d.placeholder ? x.d.title : '')) + '</figcaption>' +
         '</figure>').join('') + '</div>';
     }
-    wide.forEach((x) => {
+    const isKol = (x) => x.d.slot.indexOf('kolektan') === 0;
+    wide.filter((x) => !isKol(x)).forEach((x) => {
       html += '<div class="petugas-block">' +
         '<h3 class="petugas-sub">' + esc(x.d.group) + '</h3>' +
         '<div class="petugas-photo petugas-photo--l">' + petugasPhotoHtml(x.r, 'l', 'Foto ' + x.d.group) + '</div>' +
       '</div>';
     });
+    // Kolektan per sektor: 2 baris x 3 kolom, foto 360 x 240 px
+    const kolItems = wide.filter(isKol);
+    if (kolItems.length) {
+      html += '<div class="petugas-kolektan-grid">' + kolItems.map((x) =>
+        '<div class="petugas-block">' +
+          '<h3 class="petugas-sub">' + esc(x.d.group) + '</h3>' +
+          '<div class="petugas-photo petugas-photo--k">' + petugasPhotoHtml(x.r, 'k', 'Foto ' + x.d.group) + '</div>' +
+        '</div>').join('') + '</div>';
+    }
     box.innerHTML = html;
     if (sec) sec.hidden = !html;
   }
@@ -4071,18 +4122,18 @@ function renderAdmJadwalForm() {
 
   const petugasSpec = {
     kind: 'list',
-    intro: 'Ubah nama dan foto Tuagama, serta foto Kantoria dan Kolektan. Perubahan tersimpan di Supabase dan langsung tampil untuk semua pengunjung. Tombol Hapus menghilangkan bagian itu dari website.',
+    intro: 'Ubah nama dan foto Tuagama (8 tempat), serta foto Kantoria dan Kolektan. Perubahan tersimpan di Supabase dan langsung tampil untuk semua pengunjung. Tombol Hapus menghilangkan bagian itu dari website.',
     entries: function () {
       return PETUGAS_SLOTS.map((d) => {
         const row = petugasRows[d.slot] || null;
         const fields = [];
         if (d.person) fields.push({ key: 'name', label: 'Nama', type: 'text', max: 120 });
         fields.push({
-          key: 'photo', label: d.person ? 'Foto (3 × 4)' : 'Foto (480 × 320 px, lanskap)', type: 'image', maxPx: d.maxPx
+          key: 'photo', label: d.person ? 'Foto (3 × 4)' : (d.slot.indexOf('kolektan') === 0 ? 'Foto (360 × 240 px, lanskap)' : 'Foto (480 × 320 px, lanskap)'), type: 'image', maxPx: d.maxPx
         });
         return {
           id: d.slot, group: d.group, title: d.title,
-          sub: row ? (d.person ? (row.name || 'Tanpa nama') : 'Foto ' + (row.image_path ? 'sudah diunggah' : 'belum diunggah')) : 'Belum ada — tekan Ubah untuk menambahkan',
+          sub: row ? (d.person ? (row.name || 'Tanpa nama') : 'Foto ' + (row.image_path ? 'sudah diunggah' : 'belum diunggah')) : (d.placeholder ? 'Kosong — tekan Ubah untuk mengisi nama & foto' : 'Belum ada — tekan Ubah untuk menambahkan'),
           fields: fields,
           vals: { name: row ? row.name : (d.defName || ''), photo: row ? row.image_path : '' },
           save: async function (v) {
@@ -4600,13 +4651,19 @@ function renderAdmJadwalForm() {
               nama_tuan_rumah: payload.nama_tuan_rumah, nama_pemimpin_ibadah: payload.nama_pemimpin_ibadah,
               status_pemimpin_ibadah: payload.status_pemimpin_ibadah, by: currentUser.username, at: new Date().toISOString()
             });
-            if (r.kind === 'kel') {
+            {
               const map = Object.assign({}, siteStore.sektor || {});
-              map[r.id] = Object.assign({}, map[r.id] || {}, { tanggal: (v.tanggal || '').trim() });
+              const entry = Object.assign({}, map[r.id] || {}, {
+                hostName: payload.nama_tuan_rumah, leaderName: payload.nama_pemimpin_ibadah,
+                leaderStatus: payload.status_pemimpin_ibadah,
+                hostPhoto: scheduleOverrides[r.id].foto_tuan_rumah ? schedulePhotoPublicUrl(scheduleOverrides[r.id].foto_tuan_rumah) : '',
+                leaderPhoto: scheduleOverrides[r.id].foto_pemimpin_ibadah ? schedulePhotoPublicUrl(scheduleOverrides[r.id].foto_pemimpin_ibadah) : ''
+              });
+              if (r.kind === 'kel') { entry.tanggal = (v.tanggal || '').trim(); ref.tanggal = entry.tanggal; }
+              map[r.id] = entry;
               saveSite('sektor', map);
-              ref.tanggal = (v.tanggal || '').trim();
               try { await syncSiteContentToServer('sektor', map); }
-              catch (error) { return 'Tuan rumah & pemimpin tersimpan, tetapi tanggal ibadah BELUM tersinkron ke server: ' + (error.message || 'gagal.'); }
+              catch (error) { return 'Data tersimpan, tetapi BELUM tersinkron ke server untuk tampilan pengunjung: ' + (error.message || 'gagal.'); }
             }
             applyScheduleOverrides();
             renderSchedules();
