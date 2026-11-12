@@ -821,6 +821,11 @@
     const now = new Date();
     const parts = item.time.split(':');
     const h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+    // Unit ibadah: tanggal mengikuti jadwal perbulan (berganti otomatis tiap Rabu)
+    if (item.activeDate && /^\d{4}-\d{2}-\d{2}$/.test(item.activeDate)) {
+      const ad = item.activeDate.split('-');
+      return new Date(+ad[0], +ad[1] - 1, +ad[2], h, m, 0, 0);
+    }
     const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
     let diff = (item.day - candidate.getDay() + 7) % 7;
     if (diff === 0 && candidate.getTime() <= now.getTime()) diff = 7;
@@ -907,7 +912,10 @@
       const hostNameCard = pickName(item.nama_tuan_rumah) || pickName(item.host && item.host.name);
       const leaderNameCard = pickName(item.nama_pemimpin_ibadah) || pickName(item.leader && item.leader.name);
       const leaderStatusCard = pickName(item.status_pemimpin_ibadah) || pickName(item.leader && item.leader.status);
-      const isSektorCard = ['sektor', 'unit', 'binakel'].indexOf(item.category) !== -1;
+      // Tuan rumah & pemimpin ibadah tampil di: sektor, unit, binakel, Pemuda, Perempuan, Laki-Laki,
+      // dan kategori Anak khusus Tunas Pekabaran Injil (TPI).
+      const isSektorCard = ['sektor', 'unit', 'binakel', 'pemuda', 'perempuan', 'laki-laki'].indexOf(item.category) !== -1 ||
+        (item.category === 'anak' && item.id === 'sch-13');
       const peopleHtml = isSektorCard
         ? '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
             '<span><strong>Tuan Rumah:</strong> ' + (hostNameCard ? esc(hostNameCard) : '<em>Belum diisi</em>') + '</span></li>' +
@@ -1721,8 +1729,8 @@ form.addEventListener('submit', async (e) => {
   }
   function weekRangeForDate(iso) {
     const d = new Date(iso + 'T00:00:00Z');
-    const day = d.getUTCDay() || 7;
-    const start = new Date(d); start.setUTCDate(d.getUTCDate() - day + 1);
+    const day = d.getUTCDay(); // 0 = Minggu ... 6 = Sabtu (minggu kolektan: Minggu s/d Sabtu)
+    const start = new Date(d); start.setUTCDate(d.getUTCDate() - day);
     const end = new Date(start); end.setUTCDate(start.getUTCDate() + 6);
     const fmt = (x) => x.getUTCFullYear() + '-' + String(x.getUTCMonth() + 1).padStart(2, '0') + '-' + String(x.getUTCDate()).padStart(2, '0');
     return { start: fmt(start), end: fmt(end) };
@@ -1810,7 +1818,7 @@ form.addEventListener('submit', async (e) => {
   function mkUnit(no) {
     return {
       id: 'unit' + no, name: 'Unit ' + no,
-      day: 3, time: '17:00',
+      day: 6, time: '17:00',
       place: 'Rumah Tuan Rumah Unit ' + no,
       host: mkPerson('Nama Tuan Rumah'),
       leader: mkLeader()
@@ -1839,14 +1847,118 @@ form.addEventListener('submit', async (e) => {
     ['maranatha', 'Maranatha', 2, 4],
     ['ebenheazer', 'Ebenheazer', 2, 4],
     ['efrata', 'Efrata', 2, 4],
-    ['lahai-roi', 'Lahai-Roi', 3, 6]
+    ['lahai-roi', 'Lahai-Roi', 2, 4]
   ].map((s) => ({
     id: s[0], name: s[1],
     units: Array.apply(null, { length: s[2] }).map((_, i) => mkUnit(i + 1)),
     binakel: mkBinakel(s[3])
   }));
 
+
   function getSektor(id) { return sektorData.filter((s) => s.id === id)[0]; }
+
+  /* ----------------------------------------------------------
+     UPDATE JADWAL PERBULAN (unit ibadah)
+     ----------------------------------------------------------
+     Admin / Super Admin mengisi: tanggal, tempat, tuan rumah, pemimpin ibadah.
+     Website otomatis menampilkan jadwal untuk ibadah unit yang AKAN DATANG.
+     Siklus berganti setiap hari RABU (zona waktu WIT / Asia/Jayapura):
+       Rabu 8 s/d Selasa 14  -> tampil ibadah unit Sabtu 14
+       Rabu 15               -> otomatis tampil ibadah unit Sabtu 21
+     Jika belum ada jadwal untuk tanggal tersebut, tampilan memakai data bawaan
+     (tab "Jadwal Ibadah" / "Sektor") sebagai cadangan. */
+  const LS_UNITPLAN = 'gpm-bsf-unitplan';
+  const PLAN_DELETED = '__dihapus__';   // penanda jadwal yang dihapus (agar ikut tersinkron)
+  const CYCLE_START_DOW = 3;            // 3 = Rabu
+  let unitPlans = {};                   // 'sek-imanuel-unit1@2026-11-14' -> data jadwal
+  try {
+    const savedPlans = JSON.parse(localStorage.getItem(LS_UNITPLAN) || '{}');
+    if (savedPlans && typeof savedPlans === 'object' && !Array.isArray(savedPlans)) unitPlans = savedPlans;
+  } catch (e) { unitPlans = {}; }
+  function saveUnitPlansLocal() {
+    try { localStorage.setItem(LS_UNITPLAN, JSON.stringify(unitPlans)); return true; } catch (e) { return false; }
+  }
+
+  function isoToUTC(iso) { const p = String(iso).split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+  function utcToISO(d) {
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  }
+  function addDaysISO(iso, n) { const d = isoToUTC(iso); d.setUTCDate(d.getUTCDate() + n); return utcToISO(d); }
+  function dowOfISO(iso) { return isoToUTC(iso).getUTCDay(); }
+  function isoLabel(iso) {
+    const p = String(iso).split('-');
+    return formatDateTimeID(new Date(+p[0], +p[1] - 1, +p[2]));
+  }
+  // Awal siklus = hari Rabu terakhir (atau hari ini bila hari ini Rabu), menurut jam WIT
+  function cycleStartISO() {
+    const today = dateInChurchZone();
+    return addDaysISO(today, -((dowOfISO(today) - CYCLE_START_DOW + 7) % 7));
+  }
+  // Tanggal ibadah unit yang sedang ditampilkan pada siklus ini
+  function unitActiveDate(u) {
+    return addDaysISO(cycleStartISO(), (u.day - CYCLE_START_DOW + 7) % 7);
+  }
+  function unitBaseId(s, u) { return 'sek-' + s.id + '-' + u.id; }
+  function planKey(baseId, date) { return baseId + '@' + date; }
+  function getUnitPlan(baseId, date) {
+    const p = unitPlans[planKey(baseId, date)];
+    return p && p.place !== PLAN_DELETED ? p : null;
+  }
+  function allUnitPlans() {
+    return Object.keys(unitPlans).map((k) => unitPlans[k]).filter((p) => p && p.place !== PLAN_DELETED);
+  }
+  function unitPlansFor(baseId) {
+    return allUnitPlans().filter((p) => p.baseId === baseId).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }
+  function findUnitByBaseId(baseId) {
+    for (let i = 0; i < sektorData.length; i++) {
+      const s = sektorData[i];
+      for (let j = 0; j < s.units.length; j++) {
+        if (unitBaseId(s, s.units[j]) === baseId) return { s: s, u: s.units[j] };
+      }
+    }
+    return null;
+  }
+  function unitHasActivePlan(baseId) {
+    const f = findUnitByBaseId(baseId);
+    return !!(f && getUnitPlan(baseId, unitActiveDate(f.u)));
+  }
+
+  // Kembalikan data unit ke kondisi sebelum ditimpa jadwal perbulan
+  function clearUnitPlanOverlay() {
+    sektorData.forEach((s) => s.units.forEach((u) => {
+      if (!u._pre) return;
+      u.place = u._pre.place;
+      u.host.name = u._pre.hostName; u.host.photo = u._pre.hostPhoto;
+      u.leader.name = u._pre.leaderName; u.leader.status = u._pre.leaderStatus; u.leader.photo = u._pre.leaderPhoto;
+      u._pre = null;
+    }));
+  }
+  // Timpa data unit dengan jadwal perbulan yang cocok dengan tanggal ibadah aktif
+  function applyUnitPlans() {
+    clearUnitPlanOverlay();
+    sektorData.forEach((s) => s.units.forEach((u) => {
+      u.activeDate = unitActiveDate(u);
+      u.planned = false;
+      const p = getUnitPlan(unitBaseId(s, u), u.activeDate);
+      if (!p) return;
+      u._pre = {
+        place: u.place, hostName: u.host.name, hostPhoto: u.host.photo,
+        leaderName: u.leader.name, leaderStatus: u.leader.status, leaderPhoto: u.leader.photo
+      };
+      if (p.place) u.place = p.place;
+      if (p.hostName) {
+        if (p.hostName !== u.host.name) u.host.photo = '';       // foto lama bukan milik tuan rumah baru
+        u.host.name = p.hostName;
+      }
+      if (p.leaderName) {
+        if (p.leaderName !== u.leader.name) u.leader.photo = '';
+        u.leader.name = p.leaderName;
+      }
+      u.leader.status = p.leaderStatus || '';
+      u.planned = true;
+    }));
+  }
   function jamLabel(t) { return t + ' WIT'; }
 
   function sekPhoto(p, name) {
@@ -1935,9 +2047,14 @@ form.addEventListener('submit', async (e) => {
         host: u.host, leader: u.leader,
         rows: [
           { icon: 'church', label: 'Tempat Ibadah', value: u.place },
-          { icon: 'calendar', label: 'Hari', value: 'Setiap ' + dayNames[u.day] },
+          { icon: 'calendar', label: 'Tanggal Ibadah', value: u.activeDate ? isoLabel(u.activeDate) : 'Setiap ' + dayNames[u.day] },
           { icon: 'clock', label: 'Jam', value: jamLabel(u.time) }
-        ]
+        ].concat(unitPlansFor('sek-' + s.id + '-' + u.id)
+          .filter((p) => u.activeDate && p.date > u.activeDate).slice(0, 3)
+          .map((p) => ({
+            icon: 'calendar', label: 'Jadwal Berikutnya — ' + isoLabel(p.date),
+            value: p.place + ' • Pemimpin: ' + p.leaderName
+          })))
       }),
       actions: sekActions(() => showSektor(sid, false), 'Kembali ke Sektor')
     }, fresh);
@@ -2004,6 +2121,8 @@ form.addEventListener('submit', async (e) => {
           title: 'Sektor ' + s.name + ' — ' + u.name,
           category: 'unit', categoryLabel: 'Unit',
           day: u.day, time: u.time, place: u.place,
+          activeDate: u.activeDate || '',
+          host: u.host, leader: u.leader,
           note: 'Unit ibadah sektor ' + s.name + '. Tuan rumah: ' + u.host.name + '. Pemimpin ibadah: ' + u.leader.name + '.',
           sektor: { type: 'unit', sid: s.id, key: u.id }
         });
@@ -2014,6 +2133,7 @@ form.addEventListener('submit', async (e) => {
           title: 'Binakel ' + s.name + ' — ' + g.name,
           category: 'binakel', categoryLabel: 'Binakel',
           day: g.day, time: g.time, place: g.place,
+          host: g.host, leader: g.leader,
           note: g.tanggal + '. Tuan rumah: ' + g.host.name + '. Pemimpin ibadah: ' + g.leader.name + '.',
           noNext: true,
           sektor: { type: 'kel', sid: s.id, key: g.id }
@@ -2298,14 +2418,17 @@ async function uploadScheduleDataUrl(dataUrl, scheduleId, photoType, accessToken
   return await uploadSchedulePhoto(file, scheduleId, photoType, accessToken);
 }
 
-async function loadScheduleFromSupabase() {
+let lastScheduleSig = '';
+
+async function loadScheduleFromSupabase(silent) {
   try {
     const response = await fetch(
       SUPABASE_URL + '/rest/v1/schedule_overrides?select=*',
       {
         headers: {
           'apikey': SUPABASE_PUBLISHABLE_KEY
-        }
+        },
+        cache: 'no-store'
       }
     );
 
@@ -2315,9 +2438,33 @@ async function loadScheduleFromSupabase() {
 
     const data = await response.json();
 
+    // Pemuatan berkala (realtime): lewati bila tidak ada perubahan agar tampilan tidak berkedip.
+    const sig = cycleStartISO() + '|' + JSON.stringify(data.map((i) => [
+      i.id, i.updated_at, i.place, i.day, i.time, i.nama_tuan_rumah, i.nama_pemimpin_ibadah, i.status_pemimpin_ibadah
+    ]));
+    if (silent && sig === lastScheduleSig) return;
+    lastScheduleSig = sig;
+
     scheduleOverrides = {};
+    const serverPlans = {};
 
     data.forEach((item) => {
+      // Baris dengan id "<id-unit>@<tanggal>" adalah jadwal perbulan unit.
+      const at = String(item.id || '').indexOf('@');
+      if (at > 0) {
+        const baseId = item.id.slice(0, at);
+        const date = item.id.slice(at + 1);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          serverPlans[item.id] = {
+            baseId: baseId, date: date, place: item.place || '',
+            day: item.day, time: item.time,
+            hostName: item.nama_tuan_rumah || '', leaderName: item.nama_pemimpin_ibadah || '',
+            leaderStatus: item.status_pemimpin_ibadah || '',
+            by: item.updated_by, at: item.updated_at
+          };
+        }
+        return;
+      }
       scheduleOverrides[item.id] = {
         place: item.place,
         day: item.day,
@@ -2334,6 +2481,17 @@ async function loadScheduleFromSupabase() {
         status_pemimpin_ibadah: item.status_pemimpin_ibadah || ''
       };
     });
+
+    // Data server = sumber utama. Jadwal yang baru disimpan di perangkat ini tetapi
+    // belum berhasil tersinkron (pending) dipertahankan sampai berhasil terkirim.
+    Object.keys(unitPlans).forEach((k) => {
+      const local = unitPlans[k];
+      if (local && local.pending && (!serverPlans[k] || String(local.at) > String(serverPlans[k].at || ''))) {
+        serverPlans[k] = local;
+      }
+    });
+    unitPlans = serverPlans;
+    saveUnitPlansLocal();
 
     applyScheduleOverrides();
 
@@ -2379,23 +2537,23 @@ async function loadScheduleFromSupabase() {
 
   // Hak akses: Admin hanya dapat mengelola jadwal, unit, dan binakel di sektornya sendiri.
   const ROLE_TABS = {
-    superadmin: ['jadwal', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff', 'petugas'],
-    admin: ['jadwal', 'sektor', 'password'],
+    superadmin: ['jadwal', 'jadwalbulan', 'kolektan', 'beranda', 'profil', 'struktur', 'sektor', 'pelayanan', 'berita', 'renungan', 'galeri', 'pengumuman', 'informasi', 'pesan', 'password', 'staff', 'petugas'],
+    admin: ['jadwal', 'jadwalbulan', 'sektor', 'password'],
     bendahara: ['kolektan', 'password']
   };
   const TAB_LABEL = {
-    jadwal: 'Jadwal Ibadah', kolektan: 'Kolektan', beranda: 'Beranda', profil: 'Profil', struktur: 'Struktur',
+    jadwal: 'Jadwal Ibadah', jadwalbulan: 'Update Jadwal Perbulan', kolektan: 'Kolektan', beranda: 'Beranda', profil: 'Profil', struktur: 'Struktur',
     sektor: 'Sektor', pelayanan: 'Pelayanan', berita: 'Berita', renungan: 'Renungan', galeri: 'Galeri',
     pengumuman: 'Pengumuman', informasi: 'Informasi & Sumbangan', pesan: 'Kontak & Pesan', password: 'Ubah Kata Sandi', staff: 'Admin Yang Bertugas', petugas: 'Tuagama-Kantoria&Kolektan'
   };
   // Ikon & keterangan singkat untuk halaman "Menu Panel"
   const TAB_ICON = {
-    jadwal: 'calendar-check', kolektan: 'hand-holding-heart', beranda: 'church', profil: 'book-open', struktur: 'sitemap',
+    jadwal: 'calendar-check', jadwalbulan: 'calendar-check', kolektan: 'hand-holding-heart', beranda: 'church', profil: 'book-open', struktur: 'sitemap',
     sektor: 'people-group', pelayanan: 'hands-holding-circle', berita: 'newspaper', renungan: 'hands-praying',
     galeri: 'images', pengumuman: 'bullhorn', informasi: 'phone', pesan: 'envelope', password: 'shield-heart', staff: 'users', petugas: 'users-line'
   };
   const TAB_DESC = {
-    jadwal: 'Jadwal sektor sendiri, unit, dan binakel', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
+    jadwal: 'Jadwal sektor sendiri, unit, dan binakel', jadwalbulan: 'Jadwal unit otomatis berganti tiap Rabu', kolektan: 'Data kolekta mingguan', beranda: 'Teks & foto bagian atas',
     profil: 'Profil, visi, misi, sejarah', struktur: 'Majelis & kepengurusan', sektor: 'Tuan rumah & pemimpin ibadah',
     pelayanan: 'Kartu pelayanan jemaat', berita: 'Berita & kegiatan', renungan: 'Renungan harian',
     galeri: 'Foto dokumentasi', pengumuman: 'Pengumuman jemaat', informasi: 'Alamat, kontak, peta, rekening',
@@ -2660,6 +2818,7 @@ async function loadScheduleFromSupabase() {
 
 
 function applyScheduleOverrides() {
+  clearUnitPlanOverlay();
   scheduleRegistry().forEach((r) => {
     const o = scheduleOverrides[r.id];
     if (!o) return;
@@ -2695,6 +2854,8 @@ function applyScheduleOverrides() {
     if (r.ref.host && o.foto_tuan_rumah) r.ref.host.photo = schedulePhotoPublicUrl(o.foto_tuan_rumah);
     if (r.ref.leader && o.foto_pemimpin_ibadah) r.ref.leader.photo = schedulePhotoPublicUrl(o.foto_pemimpin_ibadah);
   });
+  // Jadwal perbulan unit selalu diterapkan paling akhir agar menjadi data yang tampil.
+  applyUnitPlans();
 }
 
   applyScheduleOverrides();
@@ -2833,7 +2994,9 @@ function applyScheduleOverrides() {
   }
   function applySektor(map) {
     if (!map || typeof map !== 'object') return;
+    clearUnitPlanOverlay();
     sektorRefsAll().forEach((r) => { if (map[r.id]) applySektorOne(r.ref, r.kind, map[r.id]); });
+    applyUnitPlans();
   }
 
   // Muat semua perubahan tersimpan
@@ -3138,6 +3301,7 @@ function applyScheduleOverrides() {
   // Di dalam form sudah ada tombol "Kembali ke daftar", jadi tombol menu hanya tampil di level atas.
   function admAtTop() {
     if (admTab === 'jadwal') return !admEditId;
+    if (admTab === 'jadwalbulan') return true;
     if (admTab === 'kolektan') return true;
     const spec = SITE_TABS[admTab];
     if (!spec) return false;
@@ -3196,6 +3360,7 @@ function applyScheduleOverrides() {
     if (!currentUser) return;
     if (admTab === null && admMulti()) { renderAdmMenu(); return; }
     if (admTab === 'jadwal' && can('jadwal')) renderAdmJadwal();
+    else if (admTab === 'jadwalbulan' && can('jadwalbulan')) renderAdmPlan();
     else if (admTab === 'kolektan' && can('kolektan')) renderAdmKolektan();
     else if (admTab === 'password' && can('password')) renderAdmPassword();
     else if (admTab === 'staff' && currentUser.role === 'superadmin') renderAdmStaff();
@@ -3323,11 +3488,241 @@ async function renderAdmPesan() {
   }
 }
 
+  /* -- Update Jadwal Perbulan (unit) -- */
+  let admPlan = { unit: '', date: '', place: '', host: '', leader: '', status: '', editing: false, filter: 'all' };
+
+  function planUnitsForAdmin() {
+    const out = [];
+    sektorData.forEach((s) => s.units.forEach((u) => {
+      const id = unitBaseId(s, u);
+      if (!scheduleBelongsToCurrentAdmin({ id: id })) return;
+      out.push({ id: id, s: s, u: u, label: 'Sektor ' + s.name + ' — ' + u.name });
+    }));
+    return out;
+  }
+
+  async function persistUnitPlan(entry) {
+    const session = JSON.parse(sessionStorage.getItem(SS_SESSION) || 'null');
+    if (!session || !session.access_token) throw new Error('Sesi login berakhir. Silakan login kembali.');
+    const dp = entry.date.split('-');
+    const response = await fetch(ADMIN_AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({
+        action: 'save_schedule',
+        id: planKey(entry.baseId, entry.date),
+        place: entry.place, day: entry.day, time: entry.time,
+        week: weekKey(new Date(+dp[0], +dp[1] - 1, +dp[2])),
+        foto_tuan_rumah: null, foto_pemimpin_ibadah: null,
+        nama_tuan_rumah: entry.hostName || '-', nama_pemimpin_ibadah: entry.leaderName || '-',
+        status_pemimpin_ibadah: entry.leaderStatus || ''
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.message || 'Server menolak penyimpanan jadwal perbulan.');
+  }
+
+  // Simpan lokal dulu (langsung tampil), lalu kirim ke server. Mengembalikan pesan galat atau null.
+  async function commitUnitPlan(entry) {
+    const key = planKey(entry.baseId, entry.date);
+    entry.by = currentUser ? currentUser.username : '';
+    entry.at = new Date().toISOString();
+    entry.pending = true;
+    unitPlans[key] = entry;
+    saveUnitPlansLocal();
+    applyScheduleOverrides();
+    renderSchedules();
+    try {
+      await persistUnitPlan(entry);
+      delete entry.pending;
+      saveUnitPlansLocal();
+      lastScheduleSig = '';
+      return null;
+    } catch (error) {
+      return error.message || 'Gagal menyinkronkan ke server.';
+    }
+  }
+
+  // Bila unit diubah lewat tab "Jadwal Ibadah"/"Sektor" dan sedang ada jadwal perbulan aktif,
+  // jadwal perbulan itu ikut diperbarui supaya tampilan di mana pun tetap sama.
+  function syncActivePlan(baseId, vals) {
+    const f = findUnitByBaseId(baseId);
+    if (!f) return;
+    const cur = getUnitPlan(baseId, unitActiveDate(f.u));
+    if (!cur) return;
+    const next = Object.assign({}, cur, vals);
+    commitUnitPlan(next).then((err) => {
+      if (err) toast('Jadwal perbulan minggu ini belum tersinkron ke server: ' + err, 'error');
+    });
+  }
+
+  function renderAdmPlan() {
+    const units = planUnitsForAdmin();
+    const cs = cycleStartISO();
+    if (!units.length) { admBody.innerHTML = '<p class="adm-empty">Tidak ada unit yang bisa dikelola oleh akun ini.</p>'; return; }
+    if (!units.some((x) => x.id === admPlan.unit)) admPlan.unit = units[0].id;
+    const sel = units.filter((x) => x.id === admPlan.unit)[0];
+    const filled = units.filter((x) => getUnitPlan(x.id, unitActiveDate(x.u))).length;
+    const pct = units.length ? Math.round((filled / units.length) * 100) : 0;
+    const unitOpts = units.map((x) =>
+      '<option value="' + esc(x.id) + '"' + (x.id === admPlan.unit ? ' selected' : '') + '>' + esc(x.label) + '</option>').join('');
+    const filterOpts = '<option value="all">Semua unit</option>' + units.map((x) =>
+      '<option value="' + esc(x.id) + '"' + (x.id === admPlan.filter ? ' selected' : '') + '>' + esc(x.label) + '</option>').join('');
+
+    admBody.innerHTML =
+      '<div class="adm-summary">' +
+        '<p>Ibadah unit yang sedang tampil di website: <strong>' + esc(isoLabel(unitActiveDate(sel.u))) + '</strong>. ' +
+        'Jadwal berganti otomatis setiap hari <strong>Rabu</strong> (WIT). ' +
+        '<strong>' + filled + ' dari ' + units.length + '</strong> unit sudah punya jadwal untuk minggu ini.</p>' +
+        '<div class="adm-bar"><span style="width:' + pct + '%"></span></div>' +
+      '</div>' +
+      '<h4 class="adm-form-title">' + (admPlan.editing ? 'Ubah jadwal' : 'Tambah jadwal ibadah unit') + '</h4>' +
+      '<p class="adm-form-sub">Pilih unit, tanggal ibadah, tuan rumah, dan pemimpin ibadah. Jadwal yang sudah diisi akan tampil sendiri pada Rabu sebelum tanggalnya.</p>' +
+      '<form id="admPlanForm" novalidate>' +
+        '<div class="field"><label for="pUnit">Unit</label><select id="pUnit"' + (admPlan.editing ? ' disabled' : '') + '>' + unitOpts + '</select></div>' +
+        '<div class="field"><label for="pDate">Tanggal ibadah</label>' +
+          '<input type="date" id="pDate" min="' + esc(cs) + '" value="' + esc(admPlan.date) + '"' + (admPlan.editing ? ' readonly' : '') + ' required />' +
+          '<small class="field-hint" id="pDayHint">Harus hari ' + esc(dayNames[sel.u.day]) + ' (hari ibadah unit ini).</small></div>' +
+        '<div class="field"><label for="pPlace">Tempat ibadah</label>' +
+          '<input type="text" id="pPlace" maxlength="120" value="' + esc(admPlan.place) + '" placeholder="Contoh: Rumah Bpk. Nama" required /></div>' +
+        '<div class="field"><label for="pHost">Nama Tuan Rumah</label>' +
+          '<input type="text" id="pHost" maxlength="120" value="' + esc(admPlan.host) + '" required /></div>' +
+        '<div class="field"><label for="pLeader">Nama Pemimpin Ibadah</label>' +
+          '<input type="text" id="pLeader" maxlength="120" value="' + esc(admPlan.leader) + '" required /></div>' +
+        '<div class="field"><label for="pStatus">Status / Jabatan Pemimpin Ibadah <small>(opsional)</small></label>' +
+          '<input type="text" id="pStatus" maxlength="120" value="' + esc(admPlan.status) + '" /></div>' +
+        '<p class="field-error" id="pErr" role="alert"></p>' +
+        '<div class="adm-actions">' +
+          (admPlan.editing ? '<button type="button" class="btn btn-ghost btn-sm" data-adm="plan-cancel">Batal</button>' : '') +
+          '<button type="submit" class="btn btn-navy btn-sm">' + (admPlan.editing ? 'Simpan Perubahan' : 'Simpan Jadwal') + '</button>' +
+        '</div>' +
+      '</form>' +
+      '<h4 class="adm-form-title" style="margin-top:1.6rem">Jadwal yang sudah diisi</h4>' +
+      '<div class="adm-controls"><select id="pFilter" aria-label="Filter unit">' + filterOpts + '</select></div>' +
+      '<div id="admPlanList"></div>';
+    renderAdmPlanList();
+  }
+
+  function renderAdmPlanList() {
+    const box = $('#admPlanList');
+    if (!box) return;
+    const cs = cycleStartISO();
+    const units = planUnitsForAdmin();
+    const ids = units.map((x) => x.id);
+    const labelOf = (id) => (units.filter((x) => x.id === id)[0] || {}).label || id;
+    const list = allUnitPlans()
+      .filter((p) => ids.indexOf(p.baseId) !== -1 && p.date >= cs)
+      .filter((p) => admPlan.filter === 'all' || p.baseId === admPlan.filter)
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.baseId < b.baseId ? -1 : 1));
+    if (!list.length) { box.innerHTML = '<p class="adm-empty">Belum ada jadwal perbulan yang diisi.</p>'; return; }
+    box.innerHTML = list.map((p) => {
+      const f = findUnitByBaseId(p.baseId);
+      const live = f && unitActiveDate(f.u) === p.date;
+      const pill = p.pending
+        ? '<span class="adm-pill warn">Belum tersinkron</span>'
+        : (live ? '<span class="adm-pill ok">Sedang tampil</span>' : '<span class="adm-pill">Akan tampil Rabu ' + esc(isoLabel(addDaysISO(p.date, -((dowOfISO(p.date) - CYCLE_START_DOW + 7) % 7))).replace(/^Rabu,\s*/, '')) + '</span>');
+      const key = planKey(p.baseId, p.date);
+      return '<div class="adm-row">' +
+        '<div class="adm-row-main"><strong>' + esc(labelOf(p.baseId)) + ' — ' + esc(isoLabel(p.date)) + '</strong>' +
+          '<span class="adm-row-sub">Tempat: ' + esc(p.place) + '</span>' +
+          '<span class="adm-row-sub">Tuan rumah: ' + esc(p.hostName) + ' • Pemimpin: ' + esc(p.leaderName) + (p.leaderStatus ? ' (' + esc(p.leaderStatus) + ')' : '') + '</span>' +
+          '<small>' + (p.at ? 'Diubah oleh ' + esc(accountName(p.by)) + ' • ' + esc(fmtStamp(p.at)) : '') + '</small></div>' +
+        '<div class="adm-row-side">' + pill +
+          '<button type="button" class="btn btn-navy btn-sm" data-adm="plan-edit" data-id="' + esc(key) + '">Ubah</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-adm="plan-del" data-id="' + esc(key) + '">Hapus</button></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  admBody.addEventListener('submit', async (e) => {
+    if (e.target.id !== 'admPlanForm') return;
+    e.preventDefault();
+    if (!can('jadwalbulan') || !currentUser) return;
+    const err = $('#pErr');
+    const baseId = $('#pUnit').value;
+    const date = $('#pDate').value;
+    const place = $('#pPlace').value.trim();
+    const host = $('#pHost').value.trim();
+    const leader = $('#pLeader').value.trim();
+    const status = $('#pStatus').value.trim();
+    const f = findUnitByBaseId(baseId);
+    if (!f || !scheduleBelongsToCurrentAdmin({ id: baseId })) { err.textContent = 'Unit tidak valid untuk akun ini.'; return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { err.textContent = 'Tanggal ibadah wajib diisi.'; return; }
+    if (dowOfISO(date) !== f.u.day) { err.textContent = 'Tanggal harus hari ' + dayNames[f.u.day] + ' (hari ibadah unit ini). Tanggal yang dipilih jatuh pada hari ' + dayNames[dowOfISO(date)] + '.'; return; }
+    if (date < cycleStartISO()) { err.textContent = 'Tanggal sudah lewat. Pilih tanggal ibadah yang akan datang.'; return; }
+    if (place.length < 3) { err.textContent = 'Tempat ibadah minimal 3 karakter.'; return; }
+    if (!host || !leader) { err.textContent = 'Nama Tuan Rumah dan Pemimpin Ibadah wajib diisi.'; return; }
+    err.textContent = '';
+    const submit = e.target.querySelector('button[type="submit"]');
+    if (submit) { submit.disabled = true; submit.textContent = 'Menyimpan...'; }
+    const msg = await commitUnitPlan({
+      baseId: baseId, date: date, place: place, day: f.u.day, time: f.u.time,
+      hostName: host, leaderName: leader, leaderStatus: status
+    });
+    admPlan = { unit: baseId, date: '', place: '', host: '', leader: '', status: '', editing: false, filter: admPlan.filter };
+    renderAdmBody();
+    if (msg) toast('Jadwal tampil di perangkat ini, tetapi BELUM tersimpan di server: ' + msg, 'error');
+    else toast('Jadwal perbulan tersimpan dan akan tampil otomatis pada waktunya.', 'success');
+  });
+
+  admBody.addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-adm]');
+    if (!t || !can('jadwalbulan')) return;
+    const act = t.getAttribute('data-adm');
+    const id = t.getAttribute('data-id');
+    if (act === 'plan-cancel') {
+      admPlan = { unit: admPlan.unit, date: '', place: '', host: '', leader: '', status: '', editing: false, filter: admPlan.filter };
+      renderAdmBody();
+    } else if (act === 'plan-edit') {
+      const p = unitPlans[id];
+      if (!p || !scheduleBelongsToCurrentAdmin({ id: p.baseId })) return;
+      admPlan = { unit: p.baseId, date: p.date, place: p.place, host: p.hostName, leader: p.leaderName, status: p.leaderStatus || '', editing: true, filter: admPlan.filter };
+      renderAdmBody();
+      admBody.scrollTop = 0;
+    } else if (act === 'plan-del') {
+      const p = unitPlans[id];
+      if (!p || !scheduleBelongsToCurrentAdmin({ id: p.baseId })) return;
+      if (!window.confirm('Hapus jadwal ' + isoLabel(p.date) + '?')) return;
+      t.disabled = true;
+      const msg = await commitUnitPlan(Object.assign({}, p, { place: PLAN_DELETED, hostName: '-', leaderName: '-', leaderStatus: '' }));
+      renderAdmBody();
+      if (msg) toast('Jadwal dihapus di perangkat ini, tetapi BELUM tersinkron ke server: ' + msg, 'error');
+      else toast('Jadwal dihapus.', 'success');
+    }
+  });
+
+  admBody.addEventListener('change', (e) => {
+    if (e.target.id === 'pFilter') { admPlan.filter = e.target.value; renderAdmPlanList(); }
+    else if (e.target.id === 'pUnit') {
+      const f = findUnitByBaseId(e.target.value);
+      admPlan.unit = e.target.value;
+      const hint = $('#pDayHint');
+      if (f && hint) hint.textContent = 'Harus hari ' + dayNames[f.u.day] + ' (hari ibadah unit ini).';
+    }
+  });
+
+  admBody.addEventListener('input', (e) => {
+    const id = e.target.id;
+    if (id === 'pDate') admPlan.date = e.target.value;
+    else if (id === 'pPlace') { admPlan.place = e.target.value; e.target.setAttribute('data-manual', '1'); }
+    else if (id === 'pHost') {
+      admPlan.host = e.target.value;
+      // Tempat ibadah otomatis "Rumah <tuan rumah>" selama belum diketik manual
+      const pl = $('#pPlace');
+      if (pl && !pl.getAttribute('data-manual') && (!admPlan.place || /^Rumah /.test(admPlan.place))) {
+        pl.value = e.target.value.trim() ? 'Rumah ' + e.target.value.trim() : '';
+        admPlan.place = pl.value;
+      }
+    }
+    else if (id === 'pLeader') admPlan.leader = e.target.value;
+    else if (id === 'pStatus') admPlan.status = e.target.value;
+  });
+
   /* -- Jadwal Ibadah -- */
   function admSummary() {
     const wk = weekKey(new Date());
     const weekly = scheduleRegistry().filter((r) => r.weekly && scheduleBelongsToCurrentAdmin(r));
-    const done = weekly.filter((r) => scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk).length;
+    const done = weekly.filter((r) => (scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk) || unitHasActivePlan(r.id)).length;
     return { done: done, total: weekly.length };
   }
 
@@ -3356,7 +3751,7 @@ async function renderAdmPesan() {
     if (!box) return;
     const wk = weekKey(new Date());
     const q = admFilter.q.trim().toLowerCase();
-    const isMissing = (r) => r.weekly && !(scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk);
+    const isMissing = (r) => r.weekly && !(scheduleOverrides[r.id] && scheduleOverrides[r.id].week === wk) && !unitHasActivePlan(r.id);
     const list = scheduleRegistry()
       .filter((r) => scheduleBelongsToCurrentAdmin(r))
       .filter((r) => admFilter.cat === 'all' || r.cat === admFilter.cat)
@@ -4665,6 +5060,7 @@ function renderAdmJadwalForm() {
               try { await syncSiteContentToServer('sektor', map); }
               catch (error) { return 'Data tersimpan, tetapi BELUM tersinkron ke server untuk tampilan pengunjung: ' + (error.message || 'gagal.'); }
             }
+            if (r.kind === 'unit') syncActivePlan(r.id, { hostName: payload.nama_tuan_rumah, leaderName: payload.nama_pemimpin_ibadah, leaderStatus: payload.status_pemimpin_ibadah });
             applyScheduleOverrides();
             renderSchedules();
             return null;
@@ -5196,6 +5592,7 @@ if (e.target.id === 'admJadwalForm') {
     }
 
     scheduleOverrides[admEditId] = entry;
+    syncActivePlan(admEditId, { place: place, hostName: namaTuanRumah, leaderName: namaPemimpin, leaderStatus: statusPemimpin });
     applyScheduleOverrides();
 
     admEditId = null;
@@ -5320,5 +5717,27 @@ if (e.target.id === 'admJadwalForm') {
   onScroll();
 
   window.setInterval(renderSchedules, 5 * 60 * 1000);
+
+  // Realtime jadwal unit:
+  // 1) Tiap menit cek apakah siklus (Rabu WIT) sudah berganti -> tampilan langsung diperbarui tanpa reload.
+  // 2) Tiap menit ambil data terbaru dari server (hanya menggambar ulang bila ada perubahan).
+  let lastCycleSeen = cycleStartISO();
+  function tickUnitCycle() {
+    const c = cycleStartISO();
+    if (c === lastCycleSeen) return;
+    lastCycleSeen = c;
+    applyScheduleOverrides();
+    renderSchedules();
+    if (currentUser && admTab === 'jadwalbulan' && admOverlay.classList.contains('open') && !admPlan.editing) renderAdmBody();
+  }
+  window.setInterval(() => {
+    tickUnitCycle();
+    if (!document.hidden) loadScheduleFromSupabase(true);
+  }, 60 * 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    tickUnitCycle();
+    loadScheduleFromSupabase(true);
+  });
 
 })();
