@@ -95,7 +95,7 @@
       note: 'Ibadah umum untuk seluruh anggota jemaat, dilanjutkan dengan persekutuan singkat.'
     },
     {
-      id: 'sch-2', title: 'Sekolah Minggu', category: 'anak', categoryLabel: 'Pelayanan Anak',
+      id: 'sch-2', title: 'Sekolah Minggu', category: 'anak', categoryLabel: 'Anak&Remaja',
       day: 0, time: '07:00', place: 'Ruang Sekolah Minggu',
       note: 'Kelas untuk anak-anak sesuai kelompok usia.'
     },
@@ -150,7 +150,7 @@
       note: 'Doa pagi bersama pengurus dan pelayan jemaat.'
     },
     {
-      id: 'sch-13', title: 'Tunas Pekabaran Injil (TPI)', category: 'anak', categoryLabel: 'Pelayanan Anak',
+      id: 'sch-13', title: 'Tunas Pekabaran Injil (TPI)', category: 'anak', categoryLabel: 'Anak&Remaja',
       day: 6, time: '17:00', place: 'Aula Jemaat',
       note: 'Pembinaan anak melalui firman, musik, dan kegiatan bersama.'
     },
@@ -163,6 +163,16 @@
       id: 'sch-15', title: 'Latihan Paduan Suara', category: 'doa', categoryLabel: 'Doa & Pelayanan',
       day: 5, time: '16:00', place: 'Gedung Gereja Lahai Roi',
       note: 'Latihan rutin paduan suara dan tim musik pelayanan.'
+    },
+    {
+      id: 'sch-16', title: 'Ibadah Kemitraan', category: 'kemitraan', categoryLabel: 'Ibadah Kemitraan',
+      day: 6, time: '17:00', place: 'Rumah anggota jemaat',
+      note: 'Ibadah kemitraan bersama jemaat mitra.'
+    },
+    {
+      id: 'sch-17', title: 'Ibadah Akhir Bulan', category: 'akhir-bulan', categoryLabel: 'Ibadah Akhir Bulan',
+      day: 0, time: '17:00', place: 'Gedung Gereja Lahai Roi',
+      note: 'Ibadah akhir bulan bertempat di gereja.'
     }
   ];
 
@@ -176,7 +186,9 @@
     { key: 'pemuda', label: 'Pemuda' },
     { key: 'perempuan', label: 'Perempuan' },
     { key: 'laki-laki', label: 'Laki-Laki' },
-    { key: 'anak', label: 'Anak' },
+    { key: 'anak', label: 'Anak&Remaja' },
+    { key: 'kemitraan', label: 'Ibadah Kemitraan' },
+    { key: 'akhir-bulan', label: 'Ibadah Akhir Bulan' },
     { key: 'doa', label: 'Doa & Pelayanan' }
   ];
 
@@ -914,9 +926,13 @@
       const leaderStatusCard = pickName(item.status_pemimpin_ibadah) || pickName(item.leader && item.leader.status);
       // Tuan rumah & pemimpin ibadah tampil di: sektor, unit, binakel, Pemuda, Perempuan, Laki-Laki,
       // dan kategori Anak khusus Tunas Pekabaran Injil (TPI).
-      const isSektorCard = ['sektor', 'unit', 'binakel', 'pemuda', 'perempuan', 'laki-laki'].indexOf(item.category) !== -1 ||
+      const isSektorCard = ['sektor', 'unit', 'binakel', 'pemuda', 'perempuan', 'laki-laki', 'kemitraan'].indexOf(item.category) !== -1 ||
         (item.category === 'anak' && item.id === 'sch-13');
-      const peopleHtml = isSektorCard
+      const isAkhirBulanCard = item.category === 'akhir-bulan';
+      const peopleHtml = isAkhirBulanCard
+        ? '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
+            '<span><strong>Pemimpin Ibadah:</strong> ' + (leaderNameCard ? esc(leaderNameCard) + (leaderStatusCard ? ' <small>(' + esc(leaderStatusCard) + ')</small>' : '') : '<em>Belum diisi</em>') + '</span></li>'
+        : isSektorCard
         ? '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
             '<span><strong>Tuan Rumah:</strong> ' + (hostNameCard ? esc(hostNameCard) : '<em>Belum diisi</em>') + '</span></li>' +
           '<li><svg class="icon" viewBox="0 0 640 512" aria-hidden="true"><use href="icons.svg#users"></use></svg>' +
@@ -3839,13 +3855,13 @@ function renderAdmJadwalForm() {
             esc(r.ref.time) + '" required /></div>' +
         '</div>' +
 
-        '<div class="field"><label for="fNamaTuanRumah">Nama Tuan Rumah</label>' +
-          '<input type="text" id="fNamaTuanRumah" maxlength="120" value="' + esc(hostName) + '" required></div>' +
+        (r.cat === 'akhir-bulan' ? '' : '<div class="field"><label for="fNamaTuanRumah">Nama Tuan Rumah</label>' +
+          '<input type="text" id="fNamaTuanRumah" maxlength="120" value="' + esc(hostName) + '" required></div>') +
         '<div class="field"><label for="fNamaPemimpin">Nama Pemimpin Ibadah</label>' +
           '<input type="text" id="fNamaPemimpin" maxlength="120" value="' + esc(leaderName) + '" required></div>' +
         '<div class="field"><label for="fStatusPemimpin">Status / Jabatan Pemimpin Ibadah</label>' +
           '<input type="text" id="fStatusPemimpin" maxlength="120" value="' + esc(leaderStatus) + '"></div>' +
-        (allowSchedulePhotos ? '<div class="field">' +
+        (allowSchedulePhotos ? (r.cat === 'akhir-bulan' ? '' : '<div class="field">' +
           '<label for="fFotoTuanRumah">Foto Tuan Rumah</label>' +
           (fotoTuanRumah
             ? '<img src="' + esc(photoUrl(fotoTuanRumah)) +
@@ -3854,7 +3870,7 @@ function renderAdmJadwalForm() {
             : '<p>Belum ada foto Tuan Rumah.</p>') +
           '<input type="file" id="fFotoTuanRumah" accept="image/*">' +
           '<input type="hidden" id="fClearFotoTuanRumah" value="0">' +
-        '</div>' +
+        '</div>') +
         '<div class="field">' +
           '<label for="fFotoPemimpin">Foto Pemimpin Ibadah</label>' +
           (fotoPemimpin
@@ -5464,7 +5480,12 @@ if (e.target.id === 'admJadwalForm') {
     err.textContent = 'Tempat ibadah minimal 3 karakter.';
     return;
   }
-  if (!namaTuanRumah || !namaPemimpin) {
+  if (r.cat === 'akhir-bulan') {
+    if (!namaPemimpin) {
+      err.textContent = 'Nama Pemimpin Ibadah wajib diisi.';
+      return;
+    }
+  } else if (!namaTuanRumah || !namaPemimpin) {
     err.textContent = 'Nama Tuan Rumah dan Pemimpin Ibadah wajib diisi.';
     return;
   }
