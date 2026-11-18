@@ -200,7 +200,7 @@
               'hingga pelayanan altar. Anggota jemaat yang terpanggil dapat mendaftar melalui majelis.'
     },
     {
-      id: 'min-2', icon: 'child-reaching', title: 'Pelayanan Anak',
+      id: 'min-2', icon: 'child-reaching', title: 'Pelayanan Anak&Remaja',
       short: 'Pembinaan iman anak melalui Sekolah Minggu dan kegiatan kreatif.',
       detail: 'Guru dan pembina Sekolah Minggu melayani anak-anak melalui cerita Alkitab, ' +
               'lagu, permainan edukatif, dan kegiatan kreatif yang menyenangkan.'
@@ -374,7 +374,7 @@
     { key: 'pelayanan', label: 'Pelayanan' },
     { key: 'pemuda', label: 'Pemuda' },
     { key: 'sosial', label: 'Sosial' },
-    { key: 'anak', label: 'Anak-Anak' },
+    { key: 'anak', label: 'Anak&Remaja' },
     { key: 'kegiatan', label: 'Kegiatan' }
   ];
 
@@ -389,7 +389,7 @@
       image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80' },
     { id: 'g-5', category: 'sosial', categoryLabel: 'Sosial', caption: 'Kegiatan bakti sosial',
       image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=900&q=80' },
-    { id: 'g-6', category: 'anak', categoryLabel: 'Anak-Anak', caption: 'Kegiatan anak-anak jemaat',
+    { id: 'g-6', category: 'anak', categoryLabel: 'Anak&Remaja', caption: 'Kegiatan anak-anak jemaat',
       image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80' },
     { id: 'g-7', category: 'pelayanan', categoryLabel: 'Pelayanan', caption: 'Pelayanan anak Sekolah Minggu',
       image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=900&q=80' },
@@ -397,7 +397,7 @@
       image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=900&q=80' },
     { id: 'g-9', category: 'sosial', categoryLabel: 'Sosial', caption: 'Persekutuan keluarga jemaat',
       image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=80' },
-    { id: 'g-10', category: 'anak', categoryLabel: 'Anak-Anak', caption: 'Pelayanan anak-anak',
+    { id: 'g-10', category: 'anak', categoryLabel: 'Anak&Remaja', caption: 'Pelayanan anak-anak',
       image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80' },
     { id: 'g-11', category: 'pemuda', categoryLabel: 'Pemuda', caption: 'Kegiatan kreatif pemuda',
       image: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=900&q=80' },
@@ -4114,7 +4114,7 @@ function renderAdmJadwalForm() {
      ========================================================== */
   // Pilihan ikon untuk kartu Pelayanan
   const ICON_CHOICES = [
-    ['church', 'Gereja'], ['child-reaching', 'Anak'], ['users-line', 'Pemuda'], ['hand-holding-heart', 'Kasih'],
+    ['church', 'Gereja'], ['child-reaching', 'Anak&Remaja'], ['users-line', 'Pemuda'], ['hand-holding-heart', 'Kasih'],
     ['users', 'Kelompok'], ['people-roof', 'Keluarga'], ['hands-holding-circle', 'Diakonia'], ['music', 'Musik'],
     ['handshake-angle', 'Sosial'], ['book-open', 'Firman'], ['hands-praying', 'Doa'], ['seedling', 'Pertumbuhan'],
     ['heart', 'Hati'], ['globe', 'Dunia'], ['people-group', 'Persekutuan'], ['shield-heart', 'Kesetiaan']
